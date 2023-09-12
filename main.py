@@ -8,7 +8,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
 
-features = ['pts_diff', 'shots_for_diff', 'leading_diff', 'h2h_scored_avg_left', 'h2h_conceded_avg_left', 'Venue', 'corsi_for_diff', 'corsi_against_diff', 'goals_for_diff', 'goals_against_diff', 'pp_percentage_diff', 'pk_percentage_diff', 'shots_against_diff', 'win_r5_left', 'draw_r5_left', 'lose_r5_left', 'scored_avg_r5_left', 'conceded_avg_r5_left', 'win_r5_right', 'draw_r5_right', 'lose_r5_right', 'scored_avg_r5_right', 'conceded_avg_r5_right', 'h2h_win_ratio_left', 'h2h_draw_ratio_left', 'h2h_lose_ratio_left']
+features = ['pts_diff', 'shots_for_diff', 'leading_diff', 'h2h_scored_avg_left', 'h2h_conceded_avg_left', 'Phase', 'Venue', 'corsi_for_diff', 'corsi_against_diff', 'goals_for_diff', 'goals_against_diff', 'pp_percentage_diff', 'pk_percentage_diff', 'shots_against_diff', 'win_r5_left', 'draw_r5_left', 'lose_r5_left', 'scored_avg_r5_left', 'conceded_avg_r5_left', 'win_r5_right', 'draw_r5_right', 'lose_r5_right', 'scored_avg_r5_right', 'conceded_avg_r5_right', 'h2h_win_ratio_left', 'h2h_draw_ratio_left', 'h2h_lose_ratio_left']
 
 
 def get_last_5_h2h(team1_name, team2_name, date): 
