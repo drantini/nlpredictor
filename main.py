@@ -5,7 +5,7 @@ team_stats = pd.read_csv('./data/teams/22_23-Teams.csv')
 games = pd.read_csv('./data/games/Combined_Games.csv')
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import accuracy_score, classification_report
 
 features = ['pts_diff', 'shots_for_diff', 'leading_diff', 'h2h_scored_avg_left', 'h2h_conceded_avg_left', 'Phase', 'Venue', 'corsi_for_diff', 'corsi_against_diff', 'goals_for_diff', 'goals_against_diff', 'pp_percentage_diff', 'pk_percentage_diff', 'shots_against_diff', 'win_r5_left', 'draw_r5_left', 'lose_r5_left', 'scored_avg_r5_left', 'conceded_avg_r5_left', 'win_r5_right', 'draw_r5_right', 'lose_r5_right', 'scored_avg_r5_right', 'conceded_avg_r5_right', 'h2h_win_ratio_left', 'h2h_draw_ratio_left', 'h2h_lose_ratio_left']
@@ -214,22 +214,22 @@ for index, row in games.iterrows():
    
 target_var = 'Outcome'
 bookmaker_margin = 6.15
-team1_name = 'SCB'
-team2_name = 'LHC'
+team1_name = 'ZSC'
+team2_name = 'HCA'
 # create dataframe for matchups between team1 and team2
 x = games[features]
 y = games[target_var]
 
 # train model
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
-model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=1) 
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=1)
+model = RandomForestClassifier(n_estimators=400, min_samples_split=5, min_samples_leaf=2, max_depth=10)
 model.fit(x_train, y_train)
 y_pred = model.predict(x_test)
 print('Accuracy: ' + str(accuracy_score(y_test, y_pred)))
 print(classification_report(y_test, y_pred))
 
 #real model train
-model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=1)
+model = RandomForestClassifier(n_estimators=400, min_samples_split=5, min_samples_leaf=2, max_depth=10)
 model.fit(x, y)
 # feature importance graph
 importance = model.feature_importances_
@@ -239,7 +239,6 @@ plt.title("Feature importances")
 plt.barh([x for x in range(len(importance))], importance, tick_label=features)
 # plt.show()
 plt.savefig('./data/feature_importance_' + target_var + '.png')
-
 
 # predict
 
@@ -254,6 +253,7 @@ matchup = pd.concat([team1_stats.add_suffix('_left'), team2_stats.add_suffix('_r
 matchup = matchup.reset_index(drop=True)
 # combine two rows into one
 matchup['Venue'] = 1
+matchup['Phase'] = 1
 # populate matchup data
 populate_matchup_data(matchup)
 team_left_last_5 = get_last_5_team(team1_name, '2023-10-01')
@@ -369,7 +369,7 @@ print(team1_name + ' vs ' + team2_name + ' ' + target_var)
 for prob in line:
     adjusted_prob = prob*100+(bookmaker_margin/len(line))
     adjusted_prob = adjusted_prob/100
-    print(f'Outcome {idx}: {round(1/prob, 2)} - Adj: {round(1/adjusted_prob, 2)}')
+    print(f'Outcome {idx}: {round(1/prob, 2)} - Adj: {round(1/adjusted_prob, 2)} - Prob: {round(prob*100, 2)}%')
     idx += 1
 
 # remove duplicates

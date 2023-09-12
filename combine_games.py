@@ -12,7 +12,7 @@ for team in team_stats['Team']:
 
     team_game_logs['Date'] = team_game_logs['Date'].apply(lambda x: re.search(r'>([^<]+)<', x).group(1) if pd.notnull(x) else x)
     # possible lines
-    team_game_logs['Outcome'] = team_game_logs['PTS'].apply(lambda x: 1 if x == 3 else 0 if x == 1 or x == 2 else -1)
+    team_game_logs['Outcome'] = team_game_logs['PTS'].apply(lambda x: 1 if x == 3 else -1 if x == 0 else 0)
     team_game_logs['Moneyline'] = team_game_logs['PTS'].apply(lambda x: 1 if x == 3 or x == 2 else 0)
     # handicap bets
     # H1-1.5 = home team wins by 2 or more
