@@ -2,6 +2,8 @@ import pandas as pd
 import re
 
 team_stats = pd.read_csv('./data/teams/Combined_Teams.csv')
+
+#get games played
 combined_game_logs = pd.DataFrame()
 game_logs_dir = './data/games/'
 #combine all game logs into one dataframe and save to csv
