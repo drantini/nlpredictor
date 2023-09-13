@@ -10,6 +10,68 @@ from sklearn.metrics import accuracy_score, classification_report
 
 features = ['pts_diff', 'shots_for_diff', 'leading_diff', 'h2h_scored_avg_left', 'h2h_conceded_avg_left', 'Phase', 'Venue', 'corsi_for_diff', 'corsi_against_diff', 'goals_for_diff', 'goals_against_diff', 'pp_percentage_diff', 'pk_percentage_diff', 'shots_against_diff', 'win_r5_left', 'draw_r5_left', 'lose_r5_left', 'scored_avg_r5_left', 'conceded_avg_r5_left', 'win_r5_right', 'draw_r5_right', 'lose_r5_right', 'scored_avg_r5_right', 'conceded_avg_r5_right', 'h2h_win_ratio_left', 'h2h_draw_ratio_left', 'h2h_lose_ratio_left']
 
+def get_dist(feature):
+    mean = games[feature].mean()
+    std = games[feature].std()
+    dist = np.random.normal(mean, std, 10000)
+    return dist
+
+def get_samples(dist):
+    samples = np.random.choice(dist, 10000)
+    return samples
+
+def monte_carlo_sim(model, its=5000):
+    samples = []
+    bankroll = 1000
+    bet_size = 0.05
+    for feature in features:
+        dist = get_dist(feature)
+        sample = get_samples(dist)
+        samples.append(sample)
+    
+    simulated_data = pd.DataFrame(np.column_stack(samples), columns=features)
+    simulated_outcomes = []
+    avg_odds = 0
+    for i in range(its):
+        # randomly select row from simulated data
+        row = simulated_data.sample(n=1, replace=True)
+        probs = model.predict_proba(row)
+        bet_amount = bankroll * bet_size
+        team1_win_prob = probs[0][1]
+        team2_win_prob = probs[0][0]
+        
+        team1_win_prob_percent = (team1_win_prob * 100)+(6.15/2)
+        team2_win_prob_percent = (team2_win_prob * 100)+(6.15/2)
+        team1_win_odds = 1 / (team1_win_prob_percent / 100)
+        team2_win_odds = 1 / (team2_win_prob_percent / 100)
+        team1_win_odds = round(team1_win_odds, 2)
+        team2_win_odds = round(team2_win_odds, 2)
+
+        winner = np.random.choice([1, 0], p=[team1_win_prob, team2_win_prob])
+        if team1_win_prob > 0.5:
+            if winner == 1:
+                bankroll += bet_amount * team1_win_odds
+                avg_odds += team1_win_odds
+            else:
+                avg_odds += team2_win_odds
+                bankroll -= bet_amount
+        else:
+            if winner == 0:
+                bankroll += bet_amount * team2_win_odds
+                avg_odds += team2_win_odds
+            else:
+                avg_odds += team1_win_odds
+                bankroll -= bet_amount
+        simulated_outcomes.append(bankroll)
+    
+    avg_odds = avg_odds / its
+    print('Average odds: ' + str(avg_odds))
+    return simulated_outcomes
+
+    
+
+
+
 
 def get_last_5_h2h(team1_name, team2_name, date): 
     h2h_last_5 = games[((games['Team'] == team1_name) & (games['Opp.'] == team2_name)) | ((games['Team'] == team2_name) & (games['Opp.'] == team1_name))]
@@ -212,25 +274,35 @@ for index, row in games.iterrows():
     
 
    
-target_var = 'Outcome'
+target_var = 'Moneyline'
 bookmaker_margin = 6.15
-team1_name = 'ZSC'
-team2_name = 'HCA'
-# create dataframe for matchups between team1 and team2
+team1_name = 'EVZ'
+team2_name = 'EHCK'
 x = games[features]
 y = games[target_var]
 
 # train model
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=1)
-model = RandomForestClassifier(n_estimators=400, min_samples_split=5, min_samples_leaf=2, max_depth=10)
-model.fit(x_train, y_train)
-y_pred = model.predict(x_test)
-print('Accuracy: ' + str(accuracy_score(y_test, y_pred)))
-print(classification_report(y_test, y_pred))
+# x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=1)
+# model = RandomForestClassifier(n_estimators=400, min_samples_split=5, min_samples_leaf=2, max_depth=10)
+# model.fit(x_train, y_train)
+# y_pred = model.predict(x_test)
+# print('Accuracy: ' + str(accuracy_score(y_test, y_pred)))
+# print(classification_report(y_test, y_pred))
 
 #real model train
 model = RandomForestClassifier(n_estimators=400, min_samples_split=5, min_samples_leaf=2, max_depth=10)
 model.fit(x, y)
+# bankrolls = monte_carlo_sim(model, 500)
+# print(bankrolls)
+# plt.figure(figsize=(10, 10))
+# plt.title("Bankroll")
+# plt.ylabel("Bankroll")
+# plt.xlabel("Iterations")
+# plt.plot(bankrolls)
+# show line over 1000
+plt.axhline(y=1000, color='r', linestyle='-')
+plt.show()
+
 # feature importance graph
 importance = model.feature_importances_
 
@@ -242,136 +314,148 @@ plt.savefig('./data/feature_importance_' + target_var + '.png')
 
 # predict
 
-teams_stats = team_stats[(team_stats['Team'] == team1_name) | (team_stats['Team'] == team2_name)]
-team1_stats = teams_stats[teams_stats['Team'] == team1_name]
-team2_stats = teams_stats[teams_stats['Team'] == team2_name]
-team1_stats = team1_stats.reset_index(drop=True)
-team2_stats = team2_stats.reset_index(drop=True)
-matchup = pd.DataFrame()
-# add team stats to games dataframe
-matchup = pd.concat([team1_stats.add_suffix('_left'), team2_stats.add_suffix('_right')], axis=1)
-matchup = matchup.reset_index(drop=True)
-# combine two rows into one
-matchup['Venue'] = 1
-matchup['Phase'] = 1
-# populate matchup data
-populate_matchup_data(matchup)
-team_left_last_5 = get_last_5_team(team1_name, '2023-10-01')
-left_last_len = len(team_left_last_5)
-team_right_last_5 = get_last_5_team(team2_name, '2023-10-01')
-right_last_len = len(team_right_last_5)
-h2h_last_5 = get_last_5_h2h(team1_name, team2_name, '2023-10-01')
-h2h_last_len = len(h2h_last_5)
-win_ratio_left = 0
-draw_ratio_left = 0
-lose_ratio_left = 0
-scored_avg_left = 0
-conceded_avg_left = 0
-h2h_left_win_ratio = 0
-h2h_left_draw_ratio = 0
-h2h_left_lose_ratio = 0
+# teams_stats = team_stats[(team_stats['Team'] == team1_name) | (team_stats['Team'] == team2_name)]
+# team1_stats = teams_stats[teams_stats['Team'] == team1_name]
+# team2_stats = teams_stats[teams_stats['Team'] == team2_name]
+# team1_stats = team1_stats.reset_index(drop=True)
+# team2_stats = team2_stats.reset_index(drop=True)
+# matchup = pd.DataFrame()
+# # add team stats to games dataframe
+# matchup = pd.concat([team1_stats.add_suffix('_left'), team2_stats.add_suffix('_right')], axis=1)
+# matchup = matchup.reset_index(drop=True)
+# # combine two rows into one
+# matchup['Venue'] = 1
+# matchup['Phase'] = 1
+# # populate matchup data
+# populate_matchup_data(matchup)
+# team_left_last_5 = get_last_5_team(team1_name, '2023-10-01')
+# left_last_len = len(team_left_last_5)
+# team_right_last_5 = get_last_5_team(team2_name, '2023-10-01')
+# right_last_len = len(team_right_last_5)
+# h2h_last_5 = get_last_5_h2h(team1_name, team2_name, '2023-10-01')
+# h2h_last_len = len(h2h_last_5)
+# win_ratio_left = 0
+# draw_ratio_left = 0
+# lose_ratio_left = 0
+# scored_avg_left = 0
+# conceded_avg_left = 0
+# h2h_left_win_ratio = 0
+# h2h_left_draw_ratio = 0
+# h2h_left_lose_ratio = 0
 
-win_ratio_right = 0
-draw_ratio_right = 0
-lose_ratio_right = 0
-scored_avg_right = 0
-conceded_avg_right = 0
-scored_avg_h2h = 0
-conceded_avg_h2h = 0
-for index2, last_game in team_left_last_5.iterrows():
-    is_team_left = last_game['Team'] == team1_name
-    if last_game['Outcome'] == 1 and is_team_left:
-        win_ratio_left += 1
-    elif last_game['Outcome'] == -1 and not is_team_left:
-        win_ratio_left += 1
-    if last_game['Outcome'] == 0:
-        draw_ratio_left += 1
-    if last_game['Outcome'] == -1 and is_team_left:
-        lose_ratio_left += 1
-    elif last_game['Outcome'] == 1 and not is_team_left:
-        lose_ratio_left += 1
-    scored_avg_left += last_game['GF'] if is_team_left else last_game['GA']
-    conceded_avg_left += last_game['GA'] if is_team_left else last_game['GF']
-for index2, last_game in team_right_last_5.iterrows():
-    is_team_left = last_game['Team'] == team1_name
-    if last_game['Outcome'] == 1 and is_team_left:
-        win_ratio_right += 1
-    elif last_game['Outcome'] == -1 and not is_team_left:
-        win_ratio_right += 1
-    if last_game['Outcome'] == 0:
-        draw_ratio_right += 1
-    if last_game['Outcome'] == -1 and is_team_left:
-        lose_ratio_right += 1
-    elif last_game['Outcome'] == 1 and not is_team_left:
-        lose_ratio_right += 1
-    scored_avg_right += last_game['GF'] if is_team_left else last_game['GA']
-    conceded_avg_right += last_game['GA'] if is_team_left else last_game['GF']
-for index2, last_game in h2h_last_5.iterrows():
-    is_team_left = last_game['Team'] == team1_name
-    if last_game['Outcome'] == 1 and is_team_left:
-        h2h_left_win_ratio += 1
-    elif last_game['Outcome'] == -1 and not is_team_left:
-        h2h_left_win_ratio += 1
-    if last_game['Outcome'] == 0:
-        h2h_left_draw_ratio += 1
-    if last_game['Outcome'] == -1 and is_team_left:
-        h2h_left_lose_ratio += 1
-    elif last_game['Outcome'] == 1 and not is_team_left:
-        h2h_left_lose_ratio += 1
-    scored_avg_h2h = last_game['GF'] if is_team_left else last_game['GA']
-    conceded_avg_h2h = last_game['GA'] if is_team_left else last_game['GF'] 
+# win_ratio_right = 0
+# draw_ratio_right = 0
+# lose_ratio_right = 0
+# scored_avg_right = 0
+# conceded_avg_right = 0
+# scored_avg_h2h = 0
+# conceded_avg_h2h = 0
+# for index2, last_game in team_left_last_5.iterrows():
+#     is_team_left = last_game['Team'] == team1_name
+#     if last_game['Outcome'] == 1 and is_team_left:
+#         win_ratio_left += 1
+#     elif last_game['Outcome'] == -1 and not is_team_left:
+#         win_ratio_left += 1
+#     if last_game['Outcome'] == 0:
+#         draw_ratio_left += 1
+#     if last_game['Outcome'] == -1 and is_team_left:
+#         lose_ratio_left += 1
+#     elif last_game['Outcome'] == 1 and not is_team_left:
+#         lose_ratio_left += 1
+#     scored_avg_left += last_game['GF'] if is_team_left else last_game['GA']
+#     conceded_avg_left += last_game['GA'] if is_team_left else last_game['GF']
+# for index2, last_game in team_right_last_5.iterrows():
+#     is_team_left = last_game['Team'] == team1_name
+#     if last_game['Outcome'] == 1 and is_team_left:
+#         win_ratio_right += 1
+#     elif last_game['Outcome'] == -1 and not is_team_left:
+#         win_ratio_right += 1
+#     if last_game['Outcome'] == 0:
+#         draw_ratio_right += 1
+#     if last_game['Outcome'] == -1 and is_team_left:
+#         lose_ratio_right += 1
+#     elif last_game['Outcome'] == 1 and not is_team_left:
+#         lose_ratio_right += 1
+#     scored_avg_right += last_game['GF'] if is_team_left else last_game['GA']
+#     conceded_avg_right += last_game['GA'] if is_team_left else last_game['GF']
+# for index2, last_game in h2h_last_5.iterrows():
+#     is_team_left = last_game['Team'] == team1_name
+#     if last_game['Outcome'] == 1 and is_team_left:
+#         h2h_left_win_ratio += 1
+#     elif last_game['Outcome'] == -1 and not is_team_left:
+#         h2h_left_win_ratio += 1
+#     if last_game['Outcome'] == 0:
+#         h2h_left_draw_ratio += 1
+#     if last_game['Outcome'] == -1 and is_team_left:
+#         h2h_left_lose_ratio += 1
+#     elif last_game['Outcome'] == 1 and not is_team_left:
+#         h2h_left_lose_ratio += 1
+#     scored_avg_h2h = last_game['GF'] if is_team_left else last_game['GA']
+#     conceded_avg_h2h = last_game['GA'] if is_team_left else last_game['GF'] 
 
-if left_last_len == 0:
-    left_last_len = 1
-if right_last_len == 0:
-    right_last_len = 1
-win_ratio_left = win_ratio_left / left_last_len
-lose_ratio_left = lose_ratio_left / left_last_len
-draw_ratio_left = draw_ratio_left/ left_last_len
-scored_avg_left = scored_avg_left / left_last_len
-conceded_avg_left = conceded_avg_left / left_last_len
-matchup['win_r5_left'] = win_ratio_left
-matchup['draw_r5_left'] = draw_ratio_left
-matchup['lose_r5_left'] = lose_ratio_left
-matchup['scored_avg_r5_left'] = scored_avg_left
-matchup['conceded_avg_r5_left'] = conceded_avg_left
-win_ratio_right = win_ratio_right / right_last_len
-lose_ratio_right = lose_ratio_right / right_last_len
-draw_ratio_right = draw_ratio_right / right_last_len
-scored_avg_right = scored_avg_right / right_last_len
-conceded_avg_right = conceded_avg_right / right_last_len
-matchup['win_r5_right'] = win_ratio_right
-matchup['draw_r5_right'] = draw_ratio_right
-matchup['lose_r5_right'] = lose_ratio_right
-matchup['scored_avg_r5_right'] = scored_avg_right
-matchup['conceded_avg_r5_right'] = conceded_avg_right
-if h2h_last_len == 0:
-    h2h_last_len = 1
-h2h_left_win_ratio = h2h_left_win_ratio / h2h_last_len
-h2h_left_draw_ratio = h2h_left_draw_ratio / h2h_last_len
-h2h_left_lose_ratio = h2h_left_lose_ratio / h2h_last_len
-scored_avg_h2h = scored_avg_h2h / h2h_last_len
-conceded_avg_h2h = conceded_avg_h2h / h2h_last_len
-matchup['h2h_win_ratio_left'] = h2h_left_win_ratio
-matchup['h2h_draw_ratio_left'] = h2h_left_draw_ratio
-matchup['h2h_lose_ratio_left'] = h2h_left_lose_ratio
-matchup['h2h_scored_avg_left'] = scored_avg_h2h
-matchup['h2h_conceded_avg_left'] = conceded_avg_h2h
-# predict
-matchup = matchup[features]
-y_pred = model.predict_proba(matchup)
-# calculate odds
-line = y_pred[0]
+# if left_last_len == 0:
+#     left_last_len = 1
+# if right_last_len == 0:
+#     right_last_len = 1
+# win_ratio_left = win_ratio_left / left_last_len
+# lose_ratio_left = lose_ratio_left / left_last_len
+# draw_ratio_left = draw_ratio_left/ left_last_len
+# scored_avg_left = scored_avg_left / left_last_len
+# conceded_avg_left = conceded_avg_left / left_last_len
+# matchup['win_r5_left'] = win_ratio_left
+# matchup['draw_r5_left'] = draw_ratio_left
+# matchup['lose_r5_left'] = lose_ratio_left
+# matchup['scored_avg_r5_left'] = scored_avg_left
+# matchup['conceded_avg_r5_left'] = conceded_avg_left
+# win_ratio_right = win_ratio_right / right_last_len
+# lose_ratio_right = lose_ratio_right / right_last_len
+# draw_ratio_right = draw_ratio_right / right_last_len
+# scored_avg_right = scored_avg_right / right_last_len
+# conceded_avg_right = conceded_avg_right / right_last_len
+# matchup['win_r5_right'] = win_ratio_right
+# matchup['draw_r5_right'] = draw_ratio_right
+# matchup['lose_r5_right'] = lose_ratio_right
+# matchup['scored_avg_r5_right'] = scored_avg_right
+# matchup['conceded_avg_r5_right'] = conceded_avg_right
+# if h2h_last_len == 0:
+#     h2h_last_len = 1
+# h2h_left_win_ratio = h2h_left_win_ratio / h2h_last_len
+# h2h_left_draw_ratio = h2h_left_draw_ratio / h2h_last_len
+# h2h_left_lose_ratio = h2h_left_lose_ratio / h2h_last_len
+# scored_avg_h2h = scored_avg_h2h / h2h_last_len
+# conceded_avg_h2h = conceded_avg_h2h / h2h_last_len
+# matchup['h2h_win_ratio_left'] = h2h_left_win_ratio
+# matchup['h2h_draw_ratio_left'] = h2h_left_draw_ratio
+# matchup['h2h_lose_ratio_left'] = h2h_left_lose_ratio
+# matchup['h2h_scored_avg_left'] = scored_avg_h2h
+# matchup['h2h_conceded_avg_left'] = conceded_avg_h2h
+# # predict
+# matchup = matchup.loc[:,~matchup.columns.duplicated()]
+# matchup = matchup[features]
+# y_pred = model.predict_proba(matchup)
+# # calculate odds
+# line = y_pred[0]
 
-idx=0
+# idx=0
 
-print(team1_name + ' vs ' + team2_name + ' ' + target_var)
-for prob in line:
-    adjusted_prob = prob*100+(bookmaker_margin/len(line))
-    adjusted_prob = adjusted_prob/100
-    print(f'Outcome {idx}: {round(1/prob, 2)} - Adj: {round(1/adjusted_prob, 2)} - Prob: {round(prob*100, 2)}%')
-    idx += 1
+# print(team1_name + ' vs ' + team2_name + ' ' + target_var)
+# for prob in line:
+#     adjusted_prob = prob*100+(bookmaker_margin/len(line))
+#     adjusted_prob = adjusted_prob/100
+#     print(f'Outcome {idx}: {round(1/prob, 2)} - Adj: {round(1/adjusted_prob, 2)} - Prob: {round(prob*100, 2)}%')
+#     idx += 1
 
-# remove duplicates
-matchup = matchup.loc[:,~matchup.columns.duplicated()]
-# write to csv
+# print('---------------------------')
+# print('Conclusion')
+# prediction = model.predict(matchup)
+# if target_var == 'Moneyline':
+#     if prediction[0] == 1:
+#         print(team1_name + ' wins')
+#     elif prediction[0] == 0:
+#         print(team2_name + ' wins')
+
+# if target_var == "OU5.5":
+#     if prediction[0] == 1:
+#         print('Over 5.5')
+#     elif prediction[0] == 0:
+#         print('Under 5.5')

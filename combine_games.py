@@ -26,6 +26,7 @@ for team in team_stats['Team']:
     team_game_logs['Phase'] = team_game_logs['Phase'].apply(lambda x: 1 if x == "Regular Season" else 0 if x == "Playoffs" else -1)
     # total goals
     team_game_logs['TG'] = team_game_logs['GF'] + team_game_logs['GA']
+    team_game_logs['Both2Goals'] = team_game_logs.apply(lambda row: 1 if row['GF'] >= 2 and row['GA'] >= 2 else 0, axis=1)
     team_game_logs['OU4.5'] = team_game_logs['TG'].apply(lambda x: 1 if x > 4 else 0)
     team_game_logs['OU5.5'] = team_game_logs['TG'].apply(lambda x: 1 if x > 5 else 0)
     team_game_logs['OU6.5'] = team_game_logs['TG'].apply(lambda x: 1 if x > 6 else 0)
