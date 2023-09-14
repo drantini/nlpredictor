@@ -19,7 +19,7 @@ from sklearn.metrics import accuracy_score, classification_report
 # TODO: Learn how to use HD passes and HD passes against to improve model
 features = ['pts_diff', 'eq_goals_diff', 'exits_denial_diff', 'entries_denial_diff', 'exits_diff', 'entries_diff', 'exp_goals_home', 'exp_goals_away', 'attack_strength_diff', 'defence_strength_diff', 'shots_for_diff', 'h2h_scored_avg_home', 'h2h_conceded_avg_home', 'corsi_for_diff', 'corsi_against_diff', 'goals_for_diff', 'goals_against_diff', 'pp_percentage_diff', 'pk_percentage_diff', 'shots_against_diff', 'win_r5_home', 'draw_r5_home', 'lose_r5_home', 'scored_avg_r5_home', 'conceded_avg_r5_home', 'win_r5_away', 'draw_r5_away', 'lose_r5_away', 'scored_avg_r5_away', 'conceded_avg_r5_away', 'h2h_win_ratio_home', 'h2h_draw_ratio_home', 'h2h_lose_ratio_home']
 
-target_var = 'Both2Goals'
+target_var = 'Moneyline'
 league_stats = pd.read_csv('./data/22_23_league.csv')
 # choose first row of league stats
 league_stats = league_stats.iloc[0]
@@ -309,11 +309,11 @@ y = games[target_var]
 
 # train model
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=10)
-model_log = LogisticRegression(random_state=15, max_iter=1000)
+model_log = LogisticRegression(random_state=15, max_iter=5000, solver='liblinear')
 model_log.fit(x_train, y_train)
 y_pred = model_log.predict(x_test)
 y_pred_train = model_log.predict(x_train)
-print('Logistic Regression')
+print('Logistic Regression - ' + target_var)
 print('Accuracy: ' + str(accuracy_score(y_test, y_pred)))
 print('Accuracy train: ' + str(accuracy_score(y_train, y_pred_train)))
 print(classification_report(y_test, y_pred))
@@ -322,9 +322,8 @@ print('Cross validation scores: ' + str(scores))
 print('Mean cross validation score: ' + str(scores.mean()))
 print('Standard deviation of cross validation scores: ' + str(scores.std()))
 
-
 #real model train
-model = LogisticRegression(random_state=15, max_iter=1000) 
+model = LogisticRegression(random_state=15, max_iter=5000, solver='liblinear') 
 model.fit(x, y)
 
 #save model
@@ -363,3 +362,5 @@ corr = games[features].corr()
 plt.figure(figsize=(10, 10))
 sns.heatmap(corr, annot=True)
 plt.savefig('./data/correlation_matrix_' + target_var + '.png')
+
+print(f'Model for {target_var} saved.')

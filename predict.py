@@ -291,8 +291,14 @@ for match in odds:
                     outcome_str = 'Under 5.5'
                 elif idx == 1:
                     outcome_str = 'Over 5.5'
+            if target_var == 'Both2Goals':
+                if idx == 0:
+                    outcome_str = 'No'
+                elif idx == 1:
+                    outcome_str = 'Yes'
 
-            if ev>config['min_ev'] and bookmaker_odd<ceiling_odd:
+            # 30% is max EV,reason: possible error in model
+            if ev>config['min_ev'] and bookmaker_odd<ceiling_odd :
                 print(f'Detected value bet: {ev}% - {target_var} {outcome_str} - Bookmaker: {bookmaker_odd}(Correct: {round(1/adjusted_prob, 2)}) - Prob: {round(prob*100, 2)}%') 
             
             odds_accuracy += (1-abs(1/adjusted_prob-bookmaker_odd)/bookmaker_odd)*100
