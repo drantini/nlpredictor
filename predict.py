@@ -265,6 +265,7 @@ for match in odds:
         idx=0
 
         bookmaker_line = match.get(target_var)
+        print(target_var)
         for prob in line:
             adjusted_prob = prob*100+(bookmaker_margin/len(line))
             adjusted_prob = adjusted_prob/100

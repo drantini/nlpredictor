@@ -12,14 +12,14 @@ entries_denial = pd.read_csv('./data/teams/entries_denial.csv')
 entries = pd.read_csv('./data/teams/entries.csv')
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
+from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
 
 # TODO: Learn how to use HD passes and HD passes against to improve model
 features = ['pts_diff', 'eq_goals_diff', 'exits_denial_diff', 'entries_denial_diff', 'exits_diff', 'entries_diff', 'exp_goals_home', 'exp_goals_away', 'attack_strength_diff', 'defence_strength_diff', 'shots_for_diff', 'h2h_scored_avg_home', 'h2h_conceded_avg_home', 'corsi_for_diff', 'corsi_against_diff', 'goals_for_diff', 'goals_against_diff', 'pp_percentage_diff', 'pk_percentage_diff', 'shots_against_diff', 'win_r5_home', 'draw_r5_home', 'lose_r5_home', 'scored_avg_r5_home', 'conceded_avg_r5_home', 'win_r5_away', 'draw_r5_away', 'lose_r5_away', 'scored_avg_r5_away', 'conceded_avg_r5_away', 'h2h_win_ratio_home', 'h2h_draw_ratio_home', 'h2h_lose_ratio_home']
 
-target_var = 'Moneyline'
+target_var = 'Both2Goals'
 league_stats = pd.read_csv('./data/22_23_league.csv')
 # choose first row of league stats
 league_stats = league_stats.iloc[0]
@@ -309,30 +309,22 @@ y = games[target_var]
 
 # train model
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=10)
-model = RandomForestClassifier(n_estimators=400, min_samples_split=5, min_samples_leaf=2, max_depth=10, random_state=10)
-model.fit(x_train, y_train)
-y_pred = model.predict(x_test)
-print('Random Forest')
-print('Accuracy: ' + str(accuracy_score(y_test, y_pred)))
-print(classification_report(y_test, y_pred))
-
-model_log = LogisticRegression(random_state=10)
+model_log = LogisticRegression(random_state=15, max_iter=1000)
 model_log.fit(x_train, y_train)
 y_pred = model_log.predict(x_test)
+y_pred_train = model_log.predict(x_train)
 print('Logistic Regression')
 print('Accuracy: ' + str(accuracy_score(y_test, y_pred)))
+print('Accuracy train: ' + str(accuracy_score(y_train, y_pred_train)))
 print(classification_report(y_test, y_pred))
-
-model_svm = SVC(kernel='linear', random_state=10)
-model_svm.fit(x_train, y_train)
-y_pred = model_svm.predict(x_test)
-print('SVM')
-print('Accuracy: ' + str(accuracy_score(y_test, y_pred)))
-print(classification_report(y_test, y_pred))
+scores = cross_val_score(model_log, x, y, cv=5)
+print('Cross validation scores: ' + str(scores))
+print('Mean cross validation score: ' + str(scores.mean()))
+print('Standard deviation of cross validation scores: ' + str(scores.std()))
 
 
 #real model train
-model = RandomForestClassifier(n_estimators=400, min_samples_split=5, min_samples_leaf=2, max_depth=10, random_state=10)
+model = LogisticRegression(random_state=15, max_iter=1000) 
 model.fit(x, y)
 
 #save model
@@ -355,13 +347,16 @@ pickle.dump(model, open(filename, 'wb'))
 # plt.show()
 
 # feature importance graph
-importance = model.feature_importances_
-
-plt.figure(figsize=(10, 10))
-plt.title("Feature importances")
-plt.barh([x for x in range(len(importance))], importance, tick_label=features)
-# plt.show()
-plt.savefig('./data/feature_importance_' + target_var + '.png')
+importance = model.coef_[0]
+abs_importance = np.abs(importance)
+importance = pd.DataFrame({
+    'Feature': x.columns,
+    'Importance': abs_importance
+})
+graph = importance.plot(x='Feature', y='Importance', kind='barh', figsize=(10, 10))
+# save to png
+fig = graph.get_figure()
+fig.savefig('./data/feature_importance_' + target_var + '.png')
 
 #correlation matrix
 corr = games[features].corr()
