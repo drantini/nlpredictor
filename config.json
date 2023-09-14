@@ -1,5 +1,5 @@
 {
-    "bookmaker_margin": 6.15,
-    "ceiling_odd": 3.2,
-    "min_ev": 2.5
+    "bookmaker_margin": 6,
+    "ceiling_odd": 5,
+    "min_ev": 2
 }

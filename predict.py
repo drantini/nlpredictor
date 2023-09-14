@@ -8,6 +8,8 @@ games = pd.read_csv('./data/games/Combined_Games_Stats.csv')
 exits = pd.read_csv('./data/teams/exits.csv')
 exits_denial = pd.read_csv('./data/teams/exits_denial.csv')
 entries = pd.read_csv('./data/teams/entries.csv')
+team_shots = pd.read_csv('./data/teams/shots.csv')
+league_shots = pd.read_csv('./data/teams/shots_league.csv')
 entries_denial = pd.read_csv('./data/teams/entries_denial.csv')
 league_stats = pd.read_csv('./data/22_23_league.csv')
 # choose first row of league stats
@@ -19,7 +21,7 @@ ceiling_odd = config['ceiling_odd']
 models = {}
 target_vars = []
 
-features = ['pts_diff', 'eq_goals_diff', 'exits_denial_diff', 'entries_denial_diff', 'exits_diff', 'entries_diff', 'exp_goals_left', 'exp_goals_right', 'attack_strength_diff', 'defence_strength_diff', 'shots_for_diff', 'leading_diff', 'h2h_scored_avg_left', 'h2h_conceded_avg_left', 'Phase', 'Venue', 'corsi_for_diff', 'corsi_against_diff', 'goals_for_diff', 'goals_against_diff', 'pp_percentage_diff', 'pk_percentage_diff', 'shots_against_diff', 'win_r5_left', 'draw_r5_left', 'lose_r5_left', 'scored_avg_r5_left', 'conceded_avg_r5_left', 'win_r5_right', 'draw_r5_right', 'lose_r5_right', 'scored_avg_r5_right', 'conceded_avg_r5_right', 'h2h_win_ratio_left', 'h2h_draw_ratio_left', 'h2h_lose_ratio_left']
+features = ['pts_diff', 'eq_goals_diff', 'exits_denial_diff', 'entries_denial_diff', 'exits_diff', 'entries_diff', 'exp_goals_home', 'exp_goals_away', 'attack_strength_diff', 'defence_strength_diff', 'shots_for_diff', 'h2h_scored_avg_home', 'h2h_conceded_avg_home', 'corsi_for_diff', 'corsi_against_diff', 'goals_for_diff', 'goals_against_diff', 'pp_percentage_diff', 'pk_percentage_diff', 'shots_against_diff', 'win_r5_home', 'draw_r5_home', 'lose_r5_home', 'scored_avg_r5_home', 'conceded_avg_r5_home', 'win_r5_away', 'draw_r5_away', 'lose_r5_away', 'scored_avg_r5_away', 'conceded_avg_r5_away', 'h2h_win_ratio_home', 'h2h_draw_ratio_home', 'h2h_lose_ratio_home']
 for model in os.listdir(model_dir): 
     if model.endswith('.sav'):
         type = model.split('_')[0]
@@ -35,8 +37,8 @@ def get_last_5_h2h(team1_name, team2_name, date):
 
 def get_last_5_team(team_name, date):
     team_last_5 = games[(games['Team'] == team_name) & (games['Date'] < date)].tail(5);
-    team_last_5_on_right = games[(games['Opp.'] == team_name) & (games['Date'] < date)].tail(5);
-    team_last_5 = pd.concat([team_last_5, team_last_5_on_right])
+    team_last_5_on_away = games[(games['Opp.'] == team_name) & (games['Date'] < date)].tail(5);
+    team_last_5 = pd.concat([team_last_5, team_last_5_on_away])
     # get last 5 before matchup date
     team_last_5 = team_last_5[team_last_5['Date'] < date]
     # get last 5 from both results
@@ -44,86 +46,83 @@ def get_last_5_team(team_name, date):
     return team_last_5
 
 def populate_matchup_data(matchup, team1, team2):
-    shots_per_match_diff = matchup['SF/60_left']-matchup['SF/60_right']
-    shots_against_per_match_diff = matchup['SA/60_left']-matchup['SA/60_right']
+    shots_per_match_diff = matchup['SF/60_home']-matchup['SF/60_away']
+    shots_against_per_match_diff = matchup['SA/60_home']-matchup['SA/60_away']
     matchup['shots_for_diff'] = shots_per_match_diff
     matchup['shots_against_diff'] = shots_against_per_match_diff
-    goals_per_match_diff = matchup['GF_/60_left']-matchup['GF_/60_right']
-    goals_against_per_match_diff = matchup['GA_/60_left']-matchup['GA_/60_right']
-    pp_percentage_diff = matchup['PP%_left']-matchup['PP%_right']
-    pk_percentage_diff = matchup['PK%_left']-matchup['PK%_right']
+    goals_per_match_diff = matchup['GF_/60_home']-matchup['GF_/60_away']
+    goals_against_per_match_diff = matchup['GA_/60_home']-matchup['GA_/60_away']
+    pp_percentage_diff = matchup['PP%_home']-matchup['PP%_away']
+    pk_percentage_diff = matchup['PK%_home']-matchup['PK%_away']
     matchup['pp_percentage_diff'] = pp_percentage_diff
     matchup['pk_percentage_diff'] = pk_percentage_diff
 
     matchup['goals_for_diff'] = goals_per_match_diff
     matchup['goals_against_diff'] = goals_against_per_match_diff
-    points_per_match_diff = matchup['PTS/GP_left']-matchup['PTS/GP_right']
+    points_per_match_diff = matchup['PTS/GP_home']-matchup['PTS/GP_away']
     matchup['pts_diff'] = points_per_match_diff
 
     #attack strength
     league_avg_goals = league_stats['GF']/league_stats['GP']
     league_avg_goals_conceded = league_stats['GA']/league_stats['GP']
-    avg_goals_left = matchup['GF_left']/matchup['GP_left']
-    avg_goals_conceded_left = matchup['GA_left']/matchup['GP_left']
-    attack_strength_left = avg_goals_left/league_avg_goals
-    defence_strength_left = avg_goals_conceded_left/league_avg_goals_conceded
-    matchup['attack_strength_left'] = attack_strength_left
-    matchup['defence_strength_left'] = defence_strength_left
+    avg_goals_home = matchup['GF_home']/matchup['GP_home']
+    avg_goals_conceded_home = matchup['GA_home']/matchup['GP_home']
+    attack_strength_home = avg_goals_home/league_avg_goals
+    defence_strength_home = avg_goals_conceded_home/league_avg_goals_conceded
+    matchup['attack_strength_home'] = attack_strength_home
+    matchup['defence_strength_home'] = defence_strength_home
 
-    avg_goals_right = matchup['GF_right']/matchup['GP_right']
-    avg_goals_conceded_right = matchup['GA_right']/matchup['GP_right']
-    attack_strength_right = avg_goals_right/league_avg_goals
-    defence_strength_right = avg_goals_conceded_right/league_avg_goals_conceded
-    matchup['attack_strength_right'] = attack_strength_right
-    matchup['defence_strength_right'] = defence_strength_right
+    avg_goals_away = matchup['GF_away']/matchup['GP_away']
+    avg_goals_conceded_away = matchup['GA_away']/matchup['GP_away']
+    attack_strength_away = avg_goals_away/league_avg_goals
+    defence_strength_away = avg_goals_conceded_away/league_avg_goals_conceded
+    matchup['attack_strength_away'] = attack_strength_away
+    matchup['defence_strength_away'] = defence_strength_away
 
-    exp_left_goals = attack_strength_left * defence_strength_right * league_avg_goals
-    exp_right_goals = attack_strength_right * defence_strength_left * league_avg_goals
-    matchup['attack_strength_diff'] = attack_strength_left - attack_strength_right
-    matchup['defence_strength_diff'] = defence_strength_left - defence_strength_right
-    matchup['exp_goals_left'] = exp_left_goals
-    matchup['exp_goals_right'] = exp_right_goals
+    exp_home_goals = attack_strength_home * defence_strength_away * league_avg_goals
+    exp_away_goals = attack_strength_away * defence_strength_home * league_avg_goals
+    matchup['attack_strength_diff'] = attack_strength_home - attack_strength_away
+    matchup['defence_strength_diff'] = defence_strength_home - defence_strength_away
+    matchup['exp_goals_home'] = exp_home_goals
+    matchup['exp_goals_away'] = exp_away_goals
 
 
-    leading_diff = matchup['Leading%_left']-matchup['Leading%_right']
-    matchup['leading_diff'] = leading_diff
-    trailing_diff = matchup['Trailing%_left']-matchup['Trailing%_right']
-    matchup['trailing_diff'] = trailing_diff
-
-    corsi_per_match_diff = matchup['CF/60_left']-matchup['CF/60_right']
-    corsi_against_per_match_diff = matchup['CA/60_left']-matchup['CA/60_right']
+    corsi_per_match_diff = matchup['CF/60_home']-matchup['CF/60_away']
+    corsi_against_per_match_diff = matchup['CA/60_home']-matchup['CA/60_away']
     matchup['corsi_for_diff'] = corsi_per_match_diff
     matchup['corsi_against_diff'] = corsi_against_per_match_diff
 
-    eq_goals_diff = matchup['EQ G±_left']-matchup['EQ G±_right']
+    eq_goals_diff = matchup['EQ G±_home']-matchup['EQ G±_away']
     matchup['eq_goals_diff'] = eq_goals_diff
 
-    team_left_exits = exits[exits['Team'] == team1]
-    team_left_exits = team_left_exits['ControlledExits %'].mean()
-    team_right_exits = exits[exits['Team'] == team2]
-    team_right_exits = team_right_exits['ControlledExits %'].mean()
-    exits_diff = team_left_exits - team_right_exits
+    team_home_exits = exits[exits['Team'] == team1]
+    team_home_exits = team_home_exits['ControlledExits %'].mean()
+    team_away_exits = exits[exits['Team'] == team2]
+    team_away_exits = team_away_exits['ControlledExits %'].mean()
+    exits_diff = team_home_exits - team_away_exits
     matchup['exits_diff'] = exits_diff
 
-    team_left_entries = entries[entries['Team'] == team1]
-    team_left_entries = team_left_entries['ControlledEntries %'].mean()
-    team_right_entries = entries[entries['Team'] == team2]
-    team_right_entries = team_right_entries['ControlledEntries %'].mean()
-    entries_diff = team_left_entries - team_right_entries
+    team_home_entries = entries[entries['Team'] == team1]
+    team_home_entries = team_home_entries['ControlledEntries %'].mean()
+    team_away_entries = entries[entries['Team'] == team2]
+    team_away_entries = team_away_entries['ControlledEntries %'].mean()
+    entries_diff = team_home_entries - team_away_entries
     matchup['entries_diff'] = entries_diff
-    team_left_exits_denial = exits_denial[exits_denial['Team'] == team1]
-    team_left_exits_denial = team_left_exits_denial['ControlledExits %against'].mean()
-    team_right_exits_denial = exits_denial[exits_denial['Team'] == team2]
-    team_right_exits_denial = team_right_exits_denial['ControlledExits %against'].mean()
-    exits_denial_diff = team_left_exits_denial - team_right_exits_denial
+    team_home_exits_denial = exits_denial[exits_denial['Team'] == team1]
+    team_home_exits_denial = team_home_exits_denial['ControlledExits %against'].mean()
+    team_away_exits_denial = exits_denial[exits_denial['Team'] == team2]
+    team_away_exits_denial = team_away_exits_denial['ControlledExits %against'].mean()
+    exits_denial_diff = team_home_exits_denial - team_away_exits_denial
     matchup['exits_denial_diff'] = exits_denial_diff
 
-    team_left_entries_denial = entries_denial[entries_denial['Team'] == team1]
-    team_left_entries_denial = team_left_entries_denial['ControlledEntries %against'].mean()
-    team_right_entries_denial = entries_denial[entries_denial['Team'] == team2]
-    team_right_entries_denial = team_right_entries_denial['ControlledEntries %against'].mean()
-    entries_denial_diff = team_left_entries_denial - team_right_entries_denial
+    team_home_entries_denial = entries_denial[entries_denial['Team'] == team1]
+    team_home_entries_denial = team_home_entries_denial['ControlledEntries %against'].mean()
+    team_away_entries_denial = entries_denial[entries_denial['Team'] == team2]
+    team_away_entries_denial = team_away_entries_denial['ControlledEntries %against'].mean()
+    entries_denial_diff = team_home_entries_denial - team_away_entries_denial
     matchup['entries_denial_diff'] = entries_denial_diff
+
+    
 
 
 
@@ -133,6 +132,8 @@ team_stats.drop(['Team name', 'Season'], axis=1, inplace=True)
 # read odds from bookmaker from json
 odds_dir = './data/odds/nike_odds.json'
 odds = json.load(open(odds_dir))
+odds_accuracy = 0
+odds_amount = 0
 for match in odds:
     team1_name = match['Matchup'].split('/')[0]
     team2_name = match['Matchup'].split('/')[1]
@@ -143,114 +144,114 @@ for match in odds:
     team2_stats = team2_stats.reset_index(drop=True)
     matchup = pd.DataFrame()
     # add team stats to games dataframe
-    matchup = pd.concat([team1_stats.add_suffix('_left'), team2_stats.add_suffix('_right')], axis=1)
+    matchup = pd.concat([team1_stats.add_suffix('_home'), team2_stats.add_suffix('_away')], axis=1)
     matchup = matchup.reset_index(drop=True)
     # combine two rows into one
     matchup['Venue'] = 1
     matchup['Phase'] = 1
     # populate matchup data
     populate_matchup_data(matchup, team1_name, team2_name)
-    team_left_last_5 = get_last_5_team(team1_name, '2023-10-01')
-    left_last_len = len(team_left_last_5)
-    team_right_last_5 = get_last_5_team(team2_name, '2023-10-01')
-    right_last_len = len(team_right_last_5)
+    team_home_last_5 = get_last_5_team(team1_name, '2023-10-01')
+    left_last_len = len(team_home_last_5)
+    team_away_last_5 = get_last_5_team(team2_name, '2023-10-01')
+    right_last_len = len(team_away_last_5)
     h2h_last_5 = get_last_5_h2h(team1_name, team2_name, '2023-10-01')
     h2h_last_len = len(h2h_last_5)
-    win_ratio_left = 0
-    draw_ratio_left = 0
-    lose_ratio_left = 0
-    scored_avg_left = 0
-    conceded_avg_left = 0
-    h2h_left_win_ratio = 0
-    h2h_left_draw_ratio = 0
-    h2h_left_lose_ratio = 0
+    win_ratio_home = 0
+    draw_ratio_home = 0
+    lose_ratio_home = 0
+    scored_avg_home = 0
+    conceded_avg_home = 0
+    h2h_home_win_ratio = 0
+    h2h_home_draw_ratio = 0
+    h2h_home_lose_ratio = 0
 
-    win_ratio_right = 0
-    draw_ratio_right = 0
-    lose_ratio_right = 0
-    scored_avg_right = 0
-    conceded_avg_right = 0
+    win_ratio_away = 0
+    draw_ratio_away = 0
+    lose_ratio_away = 0
+    scored_avg_away = 0
+    conceded_avg_away = 0
     scored_avg_h2h = 0
     conceded_avg_h2h = 0
-    for index2, last_game in team_left_last_5.iterrows():
-        is_team_left = last_game['Team'] == team1_name
-        if last_game['Outcome'] == 1 and is_team_left:
-            win_ratio_left += 1
-        elif last_game['Outcome'] == -1 and not is_team_left:
-            win_ratio_left += 1
+    for index2, last_game in team_home_last_5.iterrows():
+        is_team_home = last_game['Team'] == team1_name
+        if last_game['Outcome'] == 1 and is_team_home:
+            win_ratio_home += 1
+        elif last_game['Outcome'] == -1 and not is_team_home:
+            win_ratio_home += 1
         if last_game['Outcome'] == 0:
-            draw_ratio_left += 1
-        if last_game['Outcome'] == -1 and is_team_left:
-            lose_ratio_left += 1
-        elif last_game['Outcome'] == 1 and not is_team_left:
-            lose_ratio_left += 1
-        scored_avg_left += last_game['GF'] if is_team_left else last_game['GA']
-        conceded_avg_left += last_game['GA'] if is_team_left else last_game['GF']
-    for index2, last_game in team_right_last_5.iterrows():
-        is_team_left = last_game['Team'] == team1_name
-        if last_game['Outcome'] == 1 and is_team_left:
-            win_ratio_right += 1
-        elif last_game['Outcome'] == -1 and not is_team_left:
-            win_ratio_right += 1
+            draw_ratio_home += 1
+        if last_game['Outcome'] == -1 and is_team_home:
+            lose_ratio_home += 1
+        elif last_game['Outcome'] == 1 and not is_team_home:
+            lose_ratio_home += 1
+        scored_avg_home += last_game['GF'] if is_team_home else last_game['GA']
+        conceded_avg_home += last_game['GA'] if is_team_home else last_game['GF']
+    for index2, last_game in team_away_last_5.iterrows():
+        is_team_home = last_game['Team'] == team1_name
+        if last_game['Outcome'] == 1 and is_team_home:
+            win_ratio_away += 1
+        elif last_game['Outcome'] == -1 and not is_team_home:
+            win_ratio_away += 1
         if last_game['Outcome'] == 0:
-            draw_ratio_right += 1
-        if last_game['Outcome'] == -1 and is_team_left:
-            lose_ratio_right += 1
-        elif last_game['Outcome'] == 1 and not is_team_left:
-            lose_ratio_right += 1
-        scored_avg_right += last_game['GF'] if is_team_left else last_game['GA']
-        conceded_avg_right += last_game['GA'] if is_team_left else last_game['GF']
+            draw_ratio_away += 1
+        if last_game['Outcome'] == -1 and is_team_home:
+            lose_ratio_away += 1
+        elif last_game['Outcome'] == 1 and not is_team_home:
+            lose_ratio_away += 1
+        scored_avg_away += last_game['GF'] if is_team_home else last_game['GA']
+        conceded_avg_away += last_game['GA'] if is_team_home else last_game['GF']
     for index2, last_game in h2h_last_5.iterrows():
-        is_team_left = last_game['Team'] == team1_name
-        if last_game['Outcome'] == 1 and is_team_left:
-            h2h_left_win_ratio += 1
-        elif last_game['Outcome'] == -1 and not is_team_left:
-            h2h_left_win_ratio += 1
+        is_team_home = last_game['Team'] == team1_name
+        if last_game['Outcome'] == 1 and is_team_home:
+            h2h_home_win_ratio += 1
+        elif last_game['Outcome'] == -1 and not is_team_home:
+            h2h_home_win_ratio += 1
         if last_game['Outcome'] == 0:
-            h2h_left_draw_ratio += 1
-        if last_game['Outcome'] == -1 and is_team_left:
-            h2h_left_lose_ratio += 1
-        elif last_game['Outcome'] == 1 and not is_team_left:
-            h2h_left_lose_ratio += 1
-        scored_avg_h2h = last_game['GF'] if is_team_left else last_game['GA']
-        conceded_avg_h2h = last_game['GA'] if is_team_left else last_game['GF'] 
+            h2h_home_draw_ratio += 1
+        if last_game['Outcome'] == -1 and is_team_home:
+            h2h_home_lose_ratio += 1
+        elif last_game['Outcome'] == 1 and not is_team_home:
+            h2h_home_lose_ratio += 1
+        scored_avg_h2h = last_game['GF'] if is_team_home else last_game['GA']
+        conceded_avg_h2h = last_game['GA'] if is_team_home else last_game['GF'] 
 
     if left_last_len == 0:
         left_last_len = 1
     if right_last_len == 0:
         right_last_len = 1
-    win_ratio_left = win_ratio_left / left_last_len
-    lose_ratio_left = lose_ratio_left / left_last_len
-    draw_ratio_left = draw_ratio_left/ left_last_len
-    scored_avg_left = scored_avg_left / left_last_len
-    conceded_avg_left = conceded_avg_left / left_last_len
-    matchup['win_r5_left'] = win_ratio_left
-    matchup['draw_r5_left'] = draw_ratio_left
-    matchup['lose_r5_left'] = lose_ratio_left
-    matchup['scored_avg_r5_left'] = scored_avg_left
-    matchup['conceded_avg_r5_left'] = conceded_avg_left
-    win_ratio_right = win_ratio_right / right_last_len
-    lose_ratio_right = lose_ratio_right / right_last_len
-    draw_ratio_right = draw_ratio_right / right_last_len
-    scored_avg_right = scored_avg_right / right_last_len
-    conceded_avg_right = conceded_avg_right / right_last_len
-    matchup['win_r5_right'] = win_ratio_right
-    matchup['draw_r5_right'] = draw_ratio_right
-    matchup['lose_r5_right'] = lose_ratio_right
-    matchup['scored_avg_r5_right'] = scored_avg_right
-    matchup['conceded_avg_r5_right'] = conceded_avg_right
+    win_ratio_home = win_ratio_home / left_last_len
+    lose_ratio_home = lose_ratio_home / left_last_len
+    draw_ratio_home = draw_ratio_home/ left_last_len
+    scored_avg_home = scored_avg_home / left_last_len
+    conceded_avg_home = conceded_avg_home / left_last_len
+    matchup['win_r5_home'] = win_ratio_home
+    matchup['draw_r5_home'] = draw_ratio_home
+    matchup['lose_r5_home'] = lose_ratio_home
+    matchup['scored_avg_r5_home'] = scored_avg_home
+    matchup['conceded_avg_r5_home'] = conceded_avg_home
+    win_ratio_away = win_ratio_away / right_last_len
+    lose_ratio_away = lose_ratio_away / right_last_len
+    draw_ratio_away = draw_ratio_away / right_last_len
+    scored_avg_away = scored_avg_away / right_last_len
+    conceded_avg_away = conceded_avg_away / right_last_len
+    matchup['win_r5_away'] = win_ratio_away
+    matchup['draw_r5_away'] = draw_ratio_away
+    matchup['lose_r5_away'] = lose_ratio_away
+    matchup['scored_avg_r5_away'] = scored_avg_away
+    matchup['conceded_avg_r5_away'] = conceded_avg_away
     if h2h_last_len == 0:
         h2h_last_len = 1
-    h2h_left_win_ratio = h2h_left_win_ratio / h2h_last_len
-    h2h_left_draw_ratio = h2h_left_draw_ratio / h2h_last_len
-    h2h_left_lose_ratio = h2h_left_lose_ratio / h2h_last_len
+    h2h_home_win_ratio = h2h_home_win_ratio / h2h_last_len
+    h2h_home_draw_ratio = h2h_home_draw_ratio / h2h_last_len
+    h2h_home_lose_ratio = h2h_home_lose_ratio / h2h_last_len
     scored_avg_h2h = scored_avg_h2h / h2h_last_len
     conceded_avg_h2h = conceded_avg_h2h / h2h_last_len
-    matchup['h2h_win_ratio_left'] = h2h_left_win_ratio
-    matchup['h2h_draw_ratio_left'] = h2h_left_draw_ratio
-    matchup['h2h_lose_ratio_left'] = h2h_left_lose_ratio
-    matchup['h2h_scored_avg_left'] = scored_avg_h2h
-    matchup['h2h_conceded_avg_left'] = conceded_avg_h2h
+    matchup['h2h_win_ratio_home'] = h2h_home_win_ratio
+    matchup['h2h_draw_ratio_home'] = h2h_home_draw_ratio
+    matchup['h2h_lose_ratio_home'] = h2h_home_lose_ratio
+    matchup['h2h_scored_avg_home'] = scored_avg_h2h
+    matchup['h2h_conceded_avg_home'] = conceded_avg_h2h
     # predict
     matchup = matchup.loc[:,~matchup.columns.duplicated()]
     matchup = matchup[features]
@@ -264,7 +265,6 @@ for match in odds:
         idx=0
 
         bookmaker_line = match.get(target_var)
-        bookmaker_line.reverse()
         for prob in line:
             adjusted_prob = prob*100+(bookmaker_margin/len(line))
             adjusted_prob = adjusted_prob/100
@@ -285,9 +285,17 @@ for match in odds:
                     outcome_str = 'Draw'
                 elif idx == 2:
                     outcome_str = team1_name + ' wins in regulation'
+            if target_var == 'OU5.5':
+                if idx == 0:
+                    outcome_str = 'Under 5.5'
+                elif idx == 1:
+                    outcome_str = 'Over 5.5'
 
             if ev>config['min_ev'] and bookmaker_odd<ceiling_odd:
-                print(f'Detected value bet: {target_var} - {ev}% - Outcome {outcome_str} - Bookmaker: {bookmaker_odd} - Prob: {round(prob*100, 2)}%') 
+                print(f'Detected value bet: {ev}% - {target_var} {outcome_str} - Bookmaker: {bookmaker_odd}(Correct: {round(1/adjusted_prob, 2)}) - Prob: {round(prob*100, 2)}%') 
+            
+            odds_accuracy += (1-abs(1/adjusted_prob-bookmaker_odd)/bookmaker_odd)*100
+            odds_amount += 1
             # print(f'Outcome {idx}: - Adj: {round(1/adjusted_prob, 2)} - Prob: {round(prob*100, 2)}% - Bookmaker: {bookmaker_odd}')
             idx += 1
 
@@ -326,3 +334,5 @@ for match in odds:
         #     elif prediction[0] == 0:
         #         print('Both teams to score 2 goals - No')
     print('---------------------------')
+
+print(f'Model-Bookmaker similiarity: {round(odds_accuracy/odds_amount, 2)}%')

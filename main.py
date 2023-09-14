@@ -1,20 +1,25 @@
 import pandas as pd
 import numpy as np
+import seaborn as sns
 from matplotlib import pyplot as plt
 team_stats = pd.read_csv('./data/teams/22_23-Teams.csv')
 games = pd.read_csv('./data/games/Combined_Games.csv')
 exits = pd.read_csv('./data/teams/exits.csv')
 exits_denial = pd.read_csv('./data/teams/exits_denial.csv')
+team_shots = pd.read_csv('./data/teams/shots.csv')
+league_shots = pd.read_csv('./data/teams/shots_league.csv')
 entries_denial = pd.read_csv('./data/teams/entries_denial.csv')
 entries = pd.read_csv('./data/teams/entries.csv')
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
 
 # TODO: Learn how to use HD passes and HD passes against to improve model
-features = ['pts_diff', 'eq_goals_diff', 'exits_denial_diff', 'entries_denial_diff', 'exits_diff', 'entries_diff', 'exp_goals_left', 'exp_goals_right', 'attack_strength_diff', 'defence_strength_diff', 'shots_for_diff', 'leading_diff', 'h2h_scored_avg_left', 'h2h_conceded_avg_left', 'Phase', 'Venue', 'corsi_for_diff', 'corsi_against_diff', 'goals_for_diff', 'goals_against_diff', 'pp_percentage_diff', 'pk_percentage_diff', 'shots_against_diff', 'win_r5_left', 'draw_r5_left', 'lose_r5_left', 'scored_avg_r5_left', 'conceded_avg_r5_left', 'win_r5_right', 'draw_r5_right', 'lose_r5_right', 'scored_avg_r5_right', 'conceded_avg_r5_right', 'h2h_win_ratio_left', 'h2h_draw_ratio_left', 'h2h_lose_ratio_left']
+features = ['pts_diff', 'eq_goals_diff', 'exits_denial_diff', 'entries_denial_diff', 'exits_diff', 'entries_diff', 'exp_goals_home', 'exp_goals_away', 'attack_strength_diff', 'defence_strength_diff', 'shots_for_diff', 'h2h_scored_avg_home', 'h2h_conceded_avg_home', 'corsi_for_diff', 'corsi_against_diff', 'goals_for_diff', 'goals_against_diff', 'pp_percentage_diff', 'pk_percentage_diff', 'shots_against_diff', 'win_r5_home', 'draw_r5_home', 'lose_r5_home', 'scored_avg_r5_home', 'conceded_avg_r5_home', 'win_r5_away', 'draw_r5_away', 'lose_r5_away', 'scored_avg_r5_away', 'conceded_avg_r5_away', 'h2h_win_ratio_home', 'h2h_draw_ratio_home', 'h2h_lose_ratio_home']
 
-target_var = 'Outcome'
+target_var = 'Moneyline'
 league_stats = pd.read_csv('./data/22_23_league.csv')
 # choose first row of league stats
 league_stats = league_stats.iloc[0]
@@ -85,8 +90,8 @@ def get_last_5_h2h(team1_name, team2_name, date):
 
 def get_last_5_team(team_name, date):
     team_last_5 = games[(games['Team'] == team_name) & (games['Date'] < date)].tail(5);
-    team_last_5_on_right = games[(games['Opp.'] == team_name) & (games['Date'] < date)].tail(5);
-    team_last_5 = pd.concat([team_last_5, team_last_5_on_right])
+    team_last_5_on_away = games[(games['Opp.'] == team_name) & (games['Date'] < date)].tail(5);
+    team_last_5 = pd.concat([team_last_5, team_last_5_on_away])
     # get last 5 before matchup date
     team_last_5 = team_last_5[team_last_5['Date'] < date]
     # get last 5 from both results
@@ -98,21 +103,21 @@ def get_last_5_team(team_name, date):
 
 team_stats.drop(['Team name', 'Season'], axis=1, inplace=True)
 # add team stats to games dataframe
-# Team = _left
-# Opp. = _right
-games = pd.merge(games, team_stats, left_on='Team', right_on='Team', suffixes=('', '_left'))
+# Team = _home
+# Opp. = _away
+games = pd.merge(games, team_stats, left_on='Team', right_on='Team', suffixes=('', '_home'))
 # merge again for opponent stats
-games = pd.merge(games, team_stats, left_on='Opp.', right_on='Team', suffixes=('', '_right'))
+games = pd.merge(games, team_stats, left_on='Opp.', right_on='Team', suffixes=('', '_away'))
 # write to csv
 # sort by date
 games = games.sort_values(by=['Date'])
 for index, row in games.iterrows():
     # get last 5 games where team was either Opp. or Team
-    team_left_last_5 = get_last_5_team(row['Team'], row['Date'])
-    left_last_len = len(team_left_last_5)
+    team_home_last_5 = get_last_5_team(row['Team'], row['Date'])
+    left_last_len = len(team_home_last_5)
     
-    team_right_last_5 = get_last_5_team(row['Opp.'], row['Date'])
-    right_last_len = len(team_right_last_5)
+    team_away_last_5 = get_last_5_team(row['Opp.'], row['Date'])
+    right_last_len = len(team_away_last_5)
 
     #get last h2h games
     h2h_last_5 = get_last_5_h2h(row['Team'], row['Opp.'], row['Date'])
@@ -121,183 +126,181 @@ for index, row in games.iterrows():
     #attack strength
     league_avg_goals = league_stats['GF']/league_stats['GP'];
     league_avg_goals_conceded = league_stats['GA']/league_stats['GP'];
-    avg_goals_left = row['GF_left']/row['GP'];
-    avg_goals_conceded_left = row['GA_left']/row['GP'];
-    attack_strength_left = avg_goals_left/league_avg_goals;
-    defence_strength_left = avg_goals_conceded_left/league_avg_goals_conceded;
-    games.at[index, 'attack_strength_left'] = attack_strength_left
-    games.at[index, 'defence_strength_left'] = defence_strength_left
+    avg_goals_home = row['GF_home']/row['GP'];
+    avg_goals_conceded_home = row['GA_home']/row['GP'];
+    attack_strength_home = avg_goals_home/league_avg_goals;
+    defence_strength_home = avg_goals_conceded_home/league_avg_goals_conceded;
+    games.at[index, 'attack_strength_home'] = attack_strength_home
+    games.at[index, 'defence_strength_home'] = defence_strength_home
 
-    avg_goals_right = row['GF_right']/row['GP_right'];
-    avg_goals_conceded_right = row['GA_right']/row['GP_right'];
-    attack_strength_right = avg_goals_right/league_avg_goals;
-    defence_strength_right = avg_goals_conceded_right/league_avg_goals_conceded;
-    games.at[index, 'attack_strength_right'] = attack_strength_right
-    games.at[index, 'defence_strength_right'] = defence_strength_right
+    avg_goals_away = row['GF_away']/row['GP_away'];
+    avg_goals_conceded_away = row['GA_away']/row['GP_away'];
+    attack_strength_away = avg_goals_away/league_avg_goals;
+    defence_strength_away = avg_goals_conceded_away/league_avg_goals_conceded;
+    games.at[index, 'attack_strength_away'] = attack_strength_away
+    games.at[index, 'defence_strength_away'] = defence_strength_away
 
-    exp_left_goals = attack_strength_left * defence_strength_right * league_avg_goals;
-    exp_right_goals = attack_strength_right * defence_strength_left * league_avg_goals;
-    games.at[index, 'attack_strength_diff'] = attack_strength_left - attack_strength_right
-    games.at[index, 'defence_strength_diff'] = defence_strength_left - defence_strength_right
-    games.at[index, 'exp_goals_left'] = exp_left_goals
-    games.at[index, 'exp_goals_right'] = exp_right_goals
+    exp_home_goals = attack_strength_home * defence_strength_away * league_avg_goals;
+    exp_away_goals = attack_strength_away * defence_strength_home * league_avg_goals;
+    games.at[index, 'attack_strength_diff'] = attack_strength_home - attack_strength_away
+    games.at[index, 'defence_strength_diff'] = defence_strength_home - defence_strength_away
+    games.at[index, 'exp_goals_home'] = exp_home_goals
+    games.at[index, 'exp_goals_away'] = exp_away_goals
 
 
-    shots_per_match_diff = row['SF/60']-row['SF/60_right']
-    shots_against_per_match_diff = row['SA/60']-row['SA/60_right']
+    shots_per_match_diff = row['SF/60']-row['SF/60_away']
+    shots_against_per_match_diff = row['SA/60']-row['SA/60_away']
     games.at[index, 'shots_for_diff'] = shots_per_match_diff
     games.at[index, 'shots_against_diff'] = shots_against_per_match_diff
-    goals_per_match_diff = row['GF_/60']-row['GF_/60_right']
-    goals_against_per_match_diff = row['GA_/60']-row['GA_/60_right']
-    pp_percentage_diff = row['PP%_left']-row['PP%_right']
-    pk_percentage_diff = row['PK%_left']-row['PK%_right']
+    goals_per_match_diff = row['GF_/60']-row['GF_/60_away']
+    goals_against_per_match_diff = row['GA_/60']-row['GA_/60_away']
+    pp_percentage_diff = row['PP%_home']-row['PP%_away']
+    pk_percentage_diff = row['PK%_home']-row['PK%_away']
     games.at[index, 'pp_percentage_diff'] = pp_percentage_diff
     games.at[index, 'pk_percentage_diff'] = pk_percentage_diff
 
     games.at[index, 'goals_for_diff'] = goals_per_match_diff
     games.at[index, 'goals_against_diff'] = goals_against_per_match_diff
-    points_per_match_diff = row['PTS/GP']-row['PTS/GP_right'];
+    points_per_match_diff = row['PTS/GP']-row['PTS/GP_away'];
     games.at[index, 'pts_diff'] = points_per_match_diff
     
-    leading_diff = row['Leading%_left']-row['Leading%_right']
-    games.at[index, 'leading_diff'] = leading_diff
-    trailing_diff = row['Trailing%_left']-row['Trailing%_right']
-    games.at[index, 'trailing_diff'] = trailing_diff
 
-    corsi_per_match_diff = row['CF/60']-row['CF/60_right']
-    corsi_against_per_match_diff = row['CA/60']-row['CA/60_right']
+    corsi_per_match_diff = row['CF/60']-row['CF/60_away']
+    corsi_against_per_match_diff = row['CA/60']-row['CA/60_away']
     games.at[index, 'corsi_for_diff'] = corsi_per_match_diff
     games.at[index, 'corsi_against_diff'] = corsi_against_per_match_diff
     
 
-    eq_goals_diff = row['EQ G±_left']-row['EQ G±_right']
+    eq_goals_diff = row['EQ G±_home']-row['EQ G±_away']
     games.at[index, 'eq_goals_diff'] = eq_goals_diff
 
-    team_left_exits = exits[exits['Team'] == row['Team']]
-    team_left_exits = team_left_exits['ControlledExits %'].mean()
-    team_right_exits = exits[exits['Team'] == row['Opp.']]
-    team_right_exits = team_right_exits['ControlledExits %'].mean()
-    exits_diff = team_left_exits - team_right_exits
+    team_home_exits = exits[exits['Team'] == row['Team']]
+    team_home_exits = team_home_exits['ControlledExits %'].mean()
+    team_away_exits = exits[exits['Team'] == row['Opp.']]
+    team_away_exits = team_away_exits['ControlledExits %'].mean()
+    exits_diff = team_home_exits - team_away_exits
     games.at[index, 'exits_diff'] = exits_diff
 
-    team_left_exits_denial = exits_denial[exits_denial['Team'] == row['Team']]
-    team_left_exits_denial = team_left_exits_denial['ControlledExits %against'].mean()
-    team_right_exits_denial = exits_denial[exits_denial['Team'] == row['Opp.']]
-    team_right_exits_denial = team_right_exits_denial['ControlledExits %against'].mean()
-    exits_denial_diff = team_left_exits_denial - team_right_exits_denial
+    team_home_exits_denial = exits_denial[exits_denial['Team'] == row['Team']]
+    team_home_exits_denial = team_home_exits_denial['ControlledExits %against'].mean()
+    team_away_exits_denial = exits_denial[exits_denial['Team'] == row['Opp.']]
+    team_away_exits_denial = team_away_exits_denial['ControlledExits %against'].mean()
+    exits_denial_diff = team_home_exits_denial - team_away_exits_denial
     games.at[index, 'exits_denial_diff'] = exits_denial_diff
 
 
-    team_left_entries = entries[entries['Team'] == row['Team']]
-    team_left_entries = team_left_entries['ControlledEntries %'].mean()
-    team_right_entries = entries[entries['Team'] == row['Opp.']]
-    team_right_entries = team_right_entries['ControlledEntries %'].mean()
-    entries_diff = team_left_entries - team_right_entries
+    team_home_entries = entries[entries['Team'] == row['Team']]
+    team_home_entries = team_home_entries['ControlledEntries %'].mean()
+    team_away_entries = entries[entries['Team'] == row['Opp.']]
+    team_away_entries = team_away_entries['ControlledEntries %'].mean()
+    entries_diff = team_home_entries - team_away_entries
     games.at[index, 'entries_diff'] = entries_diff
 
-    team_left_entries_denial = entries_denial[entries_denial['Team'] == row['Team']]
-    team_left_entries_denial = team_left_entries_denial['ControlledEntries %against'].mean()
-    team_right_entries_denial = entries_denial[entries_denial['Team'] == row['Opp.']]
-    team_right_entries_denial = team_right_entries_denial['ControlledEntries %against'].mean()
-    entries_denial_diff = team_left_entries_denial - team_right_entries_denial
+    team_home_entries_denial = entries_denial[entries_denial['Team'] == row['Team']]
+    team_home_entries_denial = team_home_entries_denial['ControlledEntries %against'].mean()
+    team_away_entries_denial = entries_denial[entries_denial['Team'] == row['Opp.']]
+    team_away_entries_denial = team_away_entries_denial['ControlledEntries %against'].mean()
+    entries_denial_diff = team_home_entries_denial - team_away_entries_denial
     games.at[index, 'entries_denial_diff'] = entries_denial_diff 
 
-    win_ratio_left = 0
-    draw_ratio_left = 0
-    lose_ratio_left = 0
-    scored_avg_left = 0
-    conceded_avg_left = 0
-    h2h_left_win_ratio = 0
-    h2h_left_draw_ratio = 0
-    h2h_left_lose_ratio = 0
 
-    win_ratio_right = 0
-    draw_ratio_right = 0
-    lose_ratio_right = 0
-    scored_avg_right = 0
-    conceded_avg_right = 0
+
+    win_ratio_home = 0
+    draw_ratio_home = 0
+    lose_ratio_home = 0
+    scored_avg_home = 0
+    conceded_avg_home = 0
+    h2h_home_win_ratio = 0
+    h2h_home_draw_ratio = 0
+    h2h_home_lose_ratio = 0
+
+    win_ratio_away = 0
+    draw_ratio_away = 0
+    lose_ratio_away = 0
+    scored_avg_away = 0
+    conceded_avg_away = 0
     scored_avg_h2h = 0
     conceded_avg_h2h = 0
-    for index2, last_game in team_left_last_5.iterrows():
-        is_team_left = last_game['Team'] == row['Team']
-        if last_game['Outcome'] == 1 and is_team_left:
-            win_ratio_left += 1
-        elif last_game['Outcome'] == -1 and not is_team_left:
-            win_ratio_left += 1
+    for index2, last_game in team_home_last_5.iterrows():
+        is_team_home = last_game['Team'] == row['Team']
+        if last_game['Outcome'] == 1 and is_team_home:
+            win_ratio_home += 1
+        elif last_game['Outcome'] == -1 and not is_team_home:
+            win_ratio_home += 1
         if last_game['Outcome'] == 0:
-            draw_ratio_left += 1
-        if last_game['Outcome'] == -1 and is_team_left:
-            lose_ratio_left += 1
-        elif last_game['Outcome'] == 1 and not is_team_left:
-            lose_ratio_left += 1
-        scored_avg_left += last_game['GF'] if is_team_left else last_game['GA']
-        conceded_avg_left += last_game['GA'] if is_team_left else last_game['GF']
-    for index2, last_game in team_right_last_5.iterrows():
-        is_team_left = last_game['Team'] == row['Team']
-        if last_game['Outcome'] == 1 and is_team_left:
-            win_ratio_right += 1
-        elif last_game['Outcome'] == -1 and not is_team_left:
-            win_ratio_right += 1
+            draw_ratio_home += 1
+        if last_game['Outcome'] == -1 and is_team_home:
+            lose_ratio_home += 1
+        elif last_game['Outcome'] == 1 and not is_team_home:
+            lose_ratio_home += 1
+        scored_avg_home += last_game['GF'] if is_team_home else last_game['GA']
+        conceded_avg_home += last_game['GA'] if is_team_home else last_game['GF']
+    for index2, last_game in team_away_last_5.iterrows():
+        is_team_home = last_game['Team'] == row['Team']
+        if last_game['Outcome'] == 1 and is_team_home:
+            win_ratio_away += 1
+        elif last_game['Outcome'] == -1 and not is_team_home:
+            win_ratio_away += 1
         if last_game['Outcome'] == 0:
-            draw_ratio_right += 1
-        if last_game['Outcome'] == -1 and is_team_left:
-            lose_ratio_right += 1
-        elif last_game['Outcome'] == 1 and not is_team_left:
-            lose_ratio_right += 1
-        scored_avg_right += last_game['GF'] if is_team_left else last_game['GA']
-        conceded_avg_right += last_game['GA'] if is_team_left else last_game['GF']
+            draw_ratio_away += 1
+        if last_game['Outcome'] == -1 and is_team_home:
+            lose_ratio_away += 1
+        elif last_game['Outcome'] == 1 and not is_team_home:
+            lose_ratio_away += 1
+        scored_avg_away += last_game['GF'] if is_team_home else last_game['GA']
+        conceded_avg_away += last_game['GA'] if is_team_home else last_game['GF']
     for index2, last_game in h2h_last_5.iterrows():
-        is_team_left = last_game['Team'] == row['Team']
-        if last_game['Outcome'] == 1 and is_team_left:
-            h2h_left_win_ratio += 1
-        elif last_game['Outcome'] == -1 and not is_team_left:
-            h2h_left_win_ratio += 1
+        is_team_home = last_game['Team'] == row['Team']
+        if last_game['Outcome'] == 1 and is_team_home:
+            h2h_home_win_ratio += 1
+        elif last_game['Outcome'] == -1 and not is_team_home:
+            h2h_home_win_ratio += 1
         if last_game['Outcome'] == 0:
-            h2h_left_draw_ratio += 1
-        if last_game['Outcome'] == -1 and is_team_left:
-            h2h_left_lose_ratio += 1
-        elif last_game['Outcome'] == 1 and not is_team_left:
-            h2h_left_lose_ratio += 1
-        scored_avg_h2h = last_game['GF'] if is_team_left else last_game['GA']
-        conceded_avg_h2h = last_game['GA'] if is_team_left else last_game['GF']
+            h2h_home_draw_ratio += 1
+        if last_game['Outcome'] == -1 and is_team_home:
+            h2h_home_lose_ratio += 1
+        elif last_game['Outcome'] == 1 and not is_team_home:
+            h2h_home_lose_ratio += 1
+        scored_avg_h2h = last_game['GF'] if is_team_home else last_game['GA']
+        conceded_avg_h2h = last_game['GA'] if is_team_home else last_game['GF']
 
 
     if left_last_len == 0:
         left_last_len = 1
     if right_last_len == 0:
         right_last_len = 1 
-    win_ratio_left = win_ratio_left / left_last_len
-    lose_ratio_left = lose_ratio_left / left_last_len 
-    draw_ratio_left = draw_ratio_left/ left_last_len 
-    scored_avg_left = scored_avg_left / left_last_len
-    conceded_avg_left = conceded_avg_left / left_last_len 
-    games.at[index, 'win_r5_left'] = win_ratio_left
-    games.at[index, 'draw_r5_left'] = draw_ratio_left
-    games.at[index, 'lose_r5_left'] = lose_ratio_left
-    games.at[index, 'scored_avg_r5_left'] = scored_avg_left
-    games.at[index, 'conceded_avg_r5_left'] = conceded_avg_left
-    win_ratio_right = win_ratio_right / right_last_len
-    lose_ratio_right = lose_ratio_right / right_last_len 
-    draw_ratio_right = draw_ratio_right / right_last_len
-    scored_avg_right = scored_avg_right / right_last_len
-    conceded_avg_right = conceded_avg_right / right_last_len 
-    games.at[index, 'win_r5_right'] = win_ratio_right
-    games.at[index, 'draw_r5_right'] = draw_ratio_right
-    games.at[index, 'lose_r5_right'] = lose_ratio_right
-    games.at[index, 'scored_avg_r5_right'] = scored_avg_right
-    games.at[index, 'conceded_avg_r5_right'] = conceded_avg_right
+    win_ratio_home = win_ratio_home / left_last_len
+    lose_ratio_home = lose_ratio_home / left_last_len 
+    draw_ratio_home = draw_ratio_home/ left_last_len 
+    scored_avg_home = scored_avg_home / left_last_len
+    conceded_avg_home = conceded_avg_home / left_last_len 
+    games.at[index, 'win_r5_home'] = win_ratio_home
+    games.at[index, 'draw_r5_home'] = draw_ratio_home
+    games.at[index, 'lose_r5_home'] = lose_ratio_home
+    games.at[index, 'scored_avg_r5_home'] = scored_avg_home
+    games.at[index, 'conceded_avg_r5_home'] = conceded_avg_home
+    win_ratio_away = win_ratio_away / right_last_len
+    lose_ratio_away = lose_ratio_away / right_last_len 
+    draw_ratio_away = draw_ratio_away / right_last_len
+    scored_avg_away = scored_avg_away / right_last_len
+    conceded_avg_away = conceded_avg_away / right_last_len 
+    games.at[index, 'win_r5_away'] = win_ratio_away
+    games.at[index, 'draw_r5_away'] = draw_ratio_away
+    games.at[index, 'lose_r5_away'] = lose_ratio_away
+    games.at[index, 'scored_avg_r5_away'] = scored_avg_away
+    games.at[index, 'conceded_avg_r5_away'] = conceded_avg_away
     if h2h_last_len == 0:
         h2h_last_len = 1
-    h2h_left_win_ratio = h2h_left_win_ratio / h2h_last_len
-    h2h_left_draw_ratio = h2h_left_draw_ratio / h2h_last_len
-    h2h_left_lose_ratio = h2h_left_lose_ratio / h2h_last_len
+    h2h_home_win_ratio = h2h_home_win_ratio / h2h_last_len
+    h2h_home_draw_ratio = h2h_home_draw_ratio / h2h_last_len
+    h2h_home_lose_ratio = h2h_home_lose_ratio / h2h_last_len
     scored_avg_h2h = scored_avg_h2h / h2h_last_len
     conceded_avg_h2h = conceded_avg_h2h / h2h_last_len
-    games.at[index, 'h2h_win_ratio_left'] = h2h_left_win_ratio
-    games.at[index, 'h2h_draw_ratio_left'] = h2h_left_draw_ratio
-    games.at[index, 'h2h_lose_ratio_left'] = h2h_left_lose_ratio
-    games.at[index, 'h2h_scored_avg_left'] = scored_avg_h2h
-    games.at[index, 'h2h_conceded_avg_left'] = conceded_avg_h2h
+    games.at[index, 'h2h_win_ratio_home'] = h2h_home_win_ratio
+    games.at[index, 'h2h_draw_ratio_home'] = h2h_home_draw_ratio
+    games.at[index, 'h2h_lose_ratio_home'] = h2h_home_lose_ratio
+    games.at[index, 'h2h_scored_avg_home'] = scored_avg_h2h
+    games.at[index, 'h2h_conceded_avg_home'] = conceded_avg_h2h
     
 
    
@@ -309,8 +312,24 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_
 model = RandomForestClassifier(n_estimators=400, min_samples_split=5, min_samples_leaf=2, max_depth=10, random_state=10)
 model.fit(x_train, y_train)
 y_pred = model.predict(x_test)
+print('Random Forest')
 print('Accuracy: ' + str(accuracy_score(y_test, y_pred)))
 print(classification_report(y_test, y_pred))
+
+model_log = LogisticRegression(random_state=10)
+model_log.fit(x_train, y_train)
+y_pred = model_log.predict(x_test)
+print('Logistic Regression')
+print('Accuracy: ' + str(accuracy_score(y_test, y_pred)))
+print(classification_report(y_test, y_pred))
+
+model_svm = SVC(kernel='linear', random_state=10)
+model_svm.fit(x_train, y_train)
+y_pred = model_svm.predict(x_test)
+print('SVM')
+print('Accuracy: ' + str(accuracy_score(y_test, y_pred)))
+print(classification_report(y_test, y_pred))
+
 
 #real model train
 model = RandomForestClassifier(n_estimators=400, min_samples_split=5, min_samples_leaf=2, max_depth=10, random_state=10)
@@ -344,3 +363,8 @@ plt.barh([x for x in range(len(importance))], importance, tick_label=features)
 # plt.show()
 plt.savefig('./data/feature_importance_' + target_var + '.png')
 
+#correlation matrix
+corr = games[features].corr()
+plt.figure(figsize=(10, 10))
+sns.heatmap(corr, annot=True)
+plt.savefig('./data/correlation_matrix_' + target_var + '.png')

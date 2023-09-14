@@ -7,35 +7,32 @@ cookies = {
     '_gcl_au': '1.1.326794301.1692441962',
     '_fbp': 'fb.1.1692441963125.1736939095',
     '_gid': 'GA1.2.824419695.1694555686',
-    '_sp_srt_ses.2d0c': '*',
-    'csrfToken': 'TSqIWRDGZeOX1sFhEcUrAGExYzIyYzRhNTY2YzQ3ODgxYTM3NDIwNmNiYjM2NDViMDZhZDk0OWY%3D',
-    'Nike.bttfa': 'drantini:6d2acd33-7264-45a4-8492-c037bf041144',
+    'csrfToken': 'q1SXYI2r9%2BKaMY0BKP3elDViZDc5MTFkNDQ5Y2RhMGY1MjRmY2QzYjdiMjk0ZWVkNWM4ZDllYWE%3D',
+    'Nike.bttfa': 'drantini:61e87d84-46da-447b-9967-2d51012dd5ae',
     'Contract-Id': '14171707',
-    'TS016649c9': '010743573e353191f7e4b55cf78302c06e3d70d6701e3938bf5f9f784b14593dd58c24cac4f890018dc2500ca62072bcc8a2420977a8fae8e50ba3bfeba48e8700bc606055317aa2065eae9fa35a2ce1f916d6e2cdec09a344d3f0a19c2bc51015a4bed93e91b9c0b6940e7c0c0b6f8f6d3ed6e409',
-    '_sp_srt_id.2d0c': '902edbc0-44cf-4ab2-93e1-87794be453bd.1692441964.23.1694638347.1694620488.1b0e758c-fd71-4190-a88f-ac44abb7b628.2fd17d22-d3cb-4165-b304-a0b2cddb510f...0',
+    'TS016649c9': '010743573edcbad31c6f53d3f8814c33dff22168356a8055a8f1de53cd1baecf990c409e24fb77af075c0be27ae1f929c6dff11d7d2d97b60ba4061ed188cb4534766db33074ec71002ccd7c02a47aac02efb7bfaa2ed91b0071273cef8d8cd753e903334c4f61438c07ceae3e1ebd87781d628962',
+    '_sp_srt_id.2d0c': '902edbc0-44cf-4ab2-93e1-87794be453bd.1692441964.27.1694689903.1694687659.4ca525ec-f632-47a9-8e52-3d73104c478b.a6f02247-3346-45fb-9c8b-23294ea44c96...0',
     '_ga': 'GA1.2.895249329.1692441955',
-    '_gat_UA-166255788-2': '1',
-    '_gat_UA-166255788-4': '1',
-    '_ga_DE6QBHRM6X': 'GS1.1.1694637310.28.1.1694640055.58.0.0',
-    'TS337d42a9029': '0807006ba9ab28007efea59d889633b08b8b51e29b0793e12da61da95ddc95398c621a86abc8d4422e8f09c4db81b044',
-    'TSfabc11ac027': '0807006ba9ab2000f243ba49b893e15e3a4783bcb018047ea9ce790ae7be9c5e14e2511708077a3108d5be0edf1130007434e864150bb4eff7d428055c63e02a6952d299f9649fd8e9f1151d00b6b5b68e41062ba01030a0e403947364a2878f',
-    }
+    '_ga_DE6QBHRM6X': 'GS1.1.1694689900.30.1.1694691686.58.0.0',
+    'TS337d42a9029': '0807006ba9ab2800664311e7cb17bd95de1c72c119289beafc579c0d86cdeec6b6675d358678a732ed56fe6f7c750bea',
+    'TSfabc11ac027': '0807006ba9ab2000ebfc6e47cb49bf1a76a12bc3ac758df1cdde6b132289ecda3d8a4e3cd743805b080d4dd5fb113000f118edcb7202e5cd0573be732c929f4ff5b8e6698be4ee50a9c378729c24ae24fdd9c26aa72274c6667972d9037ad338',
+}
 headers = {
     'Accept': 'application/json, text/plain, */*',
     'Accept-Language': 'en-GB,en;q=0.9,en-US;q=0.8',
     'Connection': 'keep-alive',
     'Content-Language': 'sk',
-    # 'Cookie': 'Trace-Id=11526b41-304e-4713-ba4f-840de4c4d114; Nike.UUID=dfaafbe1-9e04-4f75-b2eb-c2675d270b5c; Nike.bitfa=34ce5c1f-bb15-4423-932f-67cf72b77132; _gcl_au=1.1.326794301.1692441962; _fbp=fb.1.1692441963125.1736939095; _gid=GA1.2.824419695.1694555686; _sp_srt_ses.2d0c=*; csrfToken=TSqIWRDGZeOX1sFhEcUrAGExYzIyYzRhNTY2YzQ3ODgxYTM3NDIwNmNiYjM2NDViMDZhZDk0OWY%3D; Nike.bttfa=drantini:6d2acd33-7264-45a4-8492-c037bf041144; Contract-Id=14171707; TS016649c9=010743573e353191f7e4b55cf78302c06e3d70d6701e3938bf5f9f784b14593dd58c24cac4f890018dc2500ca62072bcc8a2420977a8fae8e50ba3bfeba48e8700bc606055317aa2065eae9fa35a2ce1f916d6e2cdec09a344d3f0a19c2bc51015a4bed93e91b9c0b6940e7c0c0b6f8f6d3ed6e409; _sp_srt_id.2d0c=902edbc0-44cf-4ab2-93e1-87794be453bd.1692441964.23.1694638347.1694620488.1b0e758c-fd71-4190-a88f-ac44abb7b628.2fd17d22-d3cb-4165-b304-a0b2cddb510f...0; _ga=GA1.2.895249329.1692441955; _gat_UA-166255788-2=1; _gat_UA-166255788-4=1; _ga_DE6QBHRM6X=GS1.1.1694637310.28.1.1694640055.58.0.0; TS337d42a9029=0807006ba9ab28007efea59d889633b08b8b51e29b0793e12da61da95ddc95398c621a86abc8d4422e8f09c4db81b044; TSfabc11ac027=0807006ba9ab2000f243ba49b893e15e3a4783bcb018047ea9ce790ae7be9c5e14e2511708077a3108d5be0edf1130007434e864150bb4eff7d428055c63e02a6952d299f9649fd8e9f1151d00b6b5b68e41062ba01030a0e403947364a2878f',
+    # 'Cookie': 'Trace-Id=11526b41-304e-4713-ba4f-840de4c4d114; Nike.UUID=dfaafbe1-9e04-4f75-b2eb-c2675d270b5c; Nike.bitfa=34ce5c1f-bb15-4423-932f-67cf72b77132; _gcl_au=1.1.326794301.1692441962; _fbp=fb.1.1692441963125.1736939095; _gid=GA1.2.824419695.1694555686; csrfToken=q1SXYI2r9%2BKaMY0BKP3elDViZDc5MTFkNDQ5Y2RhMGY1MjRmY2QzYjdiMjk0ZWVkNWM4ZDllYWE%3D; Nike.bttfa=drantini:61e87d84-46da-447b-9967-2d51012dd5ae; Contract-Id=14171707; TS016649c9=010743573edcbad31c6f53d3f8814c33dff22168356a8055a8f1de53cd1baecf990c409e24fb77af075c0be27ae1f929c6dff11d7d2d97b60ba4061ed188cb4534766db33074ec71002ccd7c02a47aac02efb7bfaa2ed91b0071273cef8d8cd753e903334c4f61438c07ceae3e1ebd87781d628962; _sp_srt_id.2d0c=902edbc0-44cf-4ab2-93e1-87794be453bd.1692441964.27.1694689903.1694687659.4ca525ec-f632-47a9-8e52-3d73104c478b.a6f02247-3346-45fb-9c8b-23294ea44c96...0; _ga=GA1.2.895249329.1692441955; _ga_DE6QBHRM6X=GS1.1.1694689900.30.1.1694691686.58.0.0; TS337d42a9029=0807006ba9ab2800664311e7cb17bd95de1c72c119289beafc579c0d86cdeec6b6675d358678a732ed56fe6f7c750bea; TSfabc11ac027=0807006ba9ab2000ebfc6e47cb49bf1a76a12bc3ac758df1cdde6b132289ecda3d8a4e3cd743805b080d4dd5fb113000f118edcb7202e5cd0573be732c929f4ff5b8e6698be4ee50a9c378729c24ae24fdd9c26aa72274c6667972d9037ad338',
     'Origin': 'https://www.nike.sk',
     'Referer': 'https://www.nike.sk/',
     'Sec-Fetch-Dest': 'empty',
     'Sec-Fetch-Mode': 'cors',
     'Sec-Fetch-Site': 'same-site',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.76',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.81',
     'sec-ch-ua': '"Chromium";v="116", "Not)A;Brand";v="24", "Microsoft Edge";v="116"',
     'sec-ch-ua-mobile': '?0',
     'sec-ch-ua-platform': '"Windows"',
-    }
+}
 def get_game_ids():
 
     response = requests.get(
@@ -43,11 +40,18 @@ def get_game_ids():
     cookies=cookies,
     headers=headers,
     )
-    return response.json()['boxes'][0]['sportEventIds']
+    boxes = response.json()['boxes']
+    # filter out superchance box id
+    boxes = [box for box in boxes if box['boxId'] != 'superchance']
+    return boxes[0]['sportEventIds']
 
 def get_game_odds(id):
     response = requests.get(
-    f'https://api.nike.sk/api/stats2/v1/market-statistics/{id}?gameType=Prematch&lang=sk',
+    'https://api.nike.sk/api/nikeone/v1/boxes/extended/sport-event-id',
+    params={
+        'boxId': 'bi-3-22-6',
+        'sportEventId': id,
+    },
     cookies=cookies,
     headers=headers,
     )
@@ -71,22 +75,36 @@ teams = {
 }
 def format_odds(odds):
     # get match outcome: betHeaderDetail = 'Zapas'
-    outcome = odds[0];
-    first_team_name = outcome['selections'][0]['selectionName'];
-    second_team_name = outcome['selections'][2]['selectionName'];
-    first_team_odds = outcome['selections'][0]['odds'];
-    draw_odds = outcome['selections'][1]['odds'];
-    second_team_odds = outcome['selections'][2]['odds'];
-    moneyline = odds[1];
-    moneyline_first_team = moneyline['selections'][0]['odds'];
-    moneyline_second_team = moneyline['selections'][1]['odds'];
+    moneyline = odds[0];
+    moneyline_first_team = moneyline['selectionGrid'][0][0]['odds'];
+    moneyline_second_team = moneyline['selectionGrid'][0][1]['odds'];
+    outcome = odds[1];
+    first_team_name = outcome['participants'][0];
+    second_team_name = outcome['participants'][1];
+    first_team_odds = outcome['selectionGrid'][0][0]['odds'];
+    draw_odds = outcome['selectionGrid'][0][1]['odds'];
+    second_team_odds = outcome['selectionGrid'][0][2]['odds'];
+    both_2_goals_line = [x for x in odds if x['headerDetail'] == 'Každý z tímov strelí aspoň 2 góly'][0];
+    both_2_goals_yes = both_2_goals_line['selectionGrid'][0][0]['odds'];
+    both_2_goals_no = both_2_goals_line['selectionGrid'][0][1]['odds'];
+    over_5_5_goals_line = [x for x in odds if x['headerDetail'] == 'Počet gólov do rozhodnutia'];
+    over_5_5_goals_odds, under_5_5_goals_odds = 0, 0;
+    for line in over_5_5_goals_line:
+        selec_grid = line['selectionGrid'][0];
+        if selec_grid[0]['name'] == 'menej ako 5.5':
+            under_5_5_goals_odds = selec_grid[0]['odds'];
+        if selec_grid[1]['name'] == 'viac ako 5.5':
+            over_5_5_goals_odds = selec_grid[1]['odds'];
+    
     first_team_name = teams[first_team_name];
     second_team_name = teams[second_team_name];
     matchup_name = first_team_name + '/' + second_team_name;
     return {
         'Matchup': matchup_name,
-        'Outcome': [first_team_odds, draw_odds, second_team_odds],
-        'Moneyline': [moneyline_first_team, moneyline_second_team],
+        'Outcome': [second_team_odds, draw_odds, first_team_odds],
+        'Moneyline': [moneyline_second_team, moneyline_first_team],
+        'Both2Goals': [both_2_goals_no, both_2_goals_yes],
+        'OU5.5': [under_5_5_goals_odds, over_5_5_goals_odds]
     }
 
 ids = get_game_ids()

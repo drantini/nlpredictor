@@ -10,6 +10,12 @@ game_logs_dir = './data/games/'
 unique_match_id_column = 'MatchID'
 for team in team_stats['Team']:
     team_game_logs = pd.read_csv(game_logs_dir + team + '_22_23.csv')
+    # remove games with away in 'Venue' column	
+    team_game_logs = team_game_logs[team_game_logs['Venue'] != 'away']
+    # only regular season games 
+    team_game_logs = team_game_logs[team_game_logs['Phase'] == 'Regular Season']
+    # drop venue column
+    team_game_logs = team_game_logs.drop(columns=['Venue'])
     team_game_logs[unique_match_id_column] = team_game_logs['Date'].apply(lambda x: re.search(r'(\d{14})', x).group(1) if re.search(r'(\d{14})', x) else '')
 
     team_game_logs['Date'] = team_game_logs['Date'].apply(lambda x: re.search(r'>([^<]+)<', x).group(1) if pd.notnull(x) else x)
@@ -24,8 +30,6 @@ for team in team_stats['Team']:
     team_game_logs['H2+1.5'] = team_game_logs.apply(lambda row: 1 if row['GA']+1.5 > row['GF'] else 0, axis=1)
     team_game_logs['H2+2.5'] = team_game_logs.apply(lambda row: 1 if row['GA']+2.5 > row['GF'] else 0, axis=1)
 
-    team_game_logs['Venue'] = team_game_logs['Venue'].apply(lambda x: 1 if x == "home" else 0)
-    team_game_logs['Phase'] = team_game_logs['Phase'].apply(lambda x: 1 if x == "Regular Season" else 0 if x == "Playoffs" else -1)
     # total goals
     team_game_logs['TG'] = team_game_logs['GF'] + team_game_logs['GA']
     team_game_logs['Both2Goals'] = team_game_logs.apply(lambda row: 1 if row['GF'] >= 2 and row['GA'] >= 2 else 0, axis=1)
