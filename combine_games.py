@@ -27,6 +27,7 @@ for team in team_stats['Team']:
     # H2+1.5 = away team wins or draws
     team_game_logs['H1-1.5'] = team_game_logs.apply(lambda row: 1 if row['GF']-1.5 > row['GA'] else 0, axis=1)
     team_game_logs['H1-2.5'] = team_game_logs.apply(lambda row: 1 if row['GF']-2.5 > row['GA'] else 0, axis=1)
+    team_game_logs['H2-1.5'] = team_game_logs.apply(lambda row: 1 if row['GA']-1.5 > row['GF'] else 0, axis=1)
     team_game_logs['H2+1.5'] = team_game_logs.apply(lambda row: 1 if row['GA']+1.5 > row['GF'] else 0, axis=1)
     team_game_logs['H2+2.5'] = team_game_logs.apply(lambda row: 1 if row['GA']+2.5 > row['GF'] else 0, axis=1)
 

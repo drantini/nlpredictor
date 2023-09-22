@@ -3,12 +3,11 @@ import pandas as pd
 import pickle
 import json
 model_dir = './data/models/'
-team_stats = pd.read_csv('./data/teams/22_23-Teams.csv')
+team_stats = pd.read_csv('./data/teams/Combined_Teams.csv')
 games = pd.read_csv('./data/games/Combined_Games_Stats.csv')
 exits = pd.read_csv('./data/teams/exits.csv')
 exits_denial = pd.read_csv('./data/teams/exits_denial.csv')
 entries = pd.read_csv('./data/teams/entries.csv')
-team_shots = pd.read_csv('./data/teams/shots.csv')
 league_shots = pd.read_csv('./data/teams/shots_league.csv')
 entries_denial = pd.read_csv('./data/teams/entries_denial.csv')
 league_stats = pd.read_csv('./data/22_23_league.csv')
@@ -126,7 +125,6 @@ def populate_matchup_data(matchup, team1, team2):
 
 
 
-team_stats.drop(['Team name', 'Season'], axis=1, inplace=True)
 # write to csv
 # sort by date
 # read odds from bookmaker from json
@@ -134,6 +132,7 @@ odds_dir = './data/odds/nike_odds.json'
 odds = json.load(open(odds_dir))
 odds_accuracy = 0
 odds_amount = 0
+date = ''
 for match in odds:
     team1_name = match['Matchup'].split('/')[0]
     team2_name = match['Matchup'].split('/')[1]
@@ -255,6 +254,12 @@ for match in odds:
     # predict
     matchup = matchup.loc[:,~matchup.columns.duplicated()]
     matchup = matchup[features]
+    if date != match['Date']:
+        print('===============================')
+        print(match['Date'])
+    
+    date = match['Date']
+
     print(team1_name + ' vs ' + team2_name)
     for target_var in target_vars:
         model = models[target_var]
@@ -265,12 +270,14 @@ for match in odds:
         idx=0
 
         bookmaker_line = match.get(target_var)
-        print(target_var)
+        # print(target_var)
         for prob in line:
             adjusted_prob = prob*100+(bookmaker_margin/len(line))
             adjusted_prob = adjusted_prob/100
             # reverse bookmaker odds
             bookmaker_odd = bookmaker_line[idx]
+            if bookmaker_odd < 1:
+                continue
             ev = (prob*bookmaker_odd)-1
             ev = round(ev*100, 2)
             outcome_str = ''
@@ -298,7 +305,7 @@ for match in odds:
                     outcome_str = 'Yes'
 
             # 30% is max EV,reason: possible error in model
-            if ev>config['min_ev'] and bookmaker_odd<ceiling_odd :
+            if ev>config['min_ev'] and bookmaker_odd<ceiling_odd and bookmaker_odd > 1:
                 print(f'Detected value bet: {ev}% - {target_var} {outcome_str} - Bookmaker: {bookmaker_odd}(Correct: {round(1/adjusted_prob, 2)}) - Prob: {round(prob*100, 2)}%') 
             
             odds_accuracy += (1-abs(1/adjusted_prob-bookmaker_odd)/bookmaker_odd)*100

@@ -43,7 +43,13 @@ def get_game_ids():
     boxes = response.json()['boxes']
     # filter out superchance box id
     boxes = [box for box in boxes if box['boxId'] != 'superchance']
-    return boxes[0]['sportEventIds']
+    boxes = [box for box in boxes if box['boxId'] != 'superoffer']
+    # filer sportEventIds with liveSportEventIds
+    sportEventIds = boxes[0]['sportEventIds']
+    liveSportEventIds = boxes[0]['liveSportEventIds']
+    boxes[0]['sportEventIds'] = [id for id in sportEventIds if id not in liveSportEventIds]
+    sportEventIds = boxes[0]['sportEventIds']
+    return sportEventIds 
 
 def get_game_odds(id):
     response = requests.get(
@@ -76,18 +82,28 @@ teams = {
 def format_odds(odds):
     # get match outcome: betHeaderDetail = 'Zapas'
     moneyline = odds[0];
+    date = moneyline['expirationTime'].split('T')[0];
     moneyline_first_team = moneyline['selectionGrid'][0][0]['odds'];
     moneyline_second_team = moneyline['selectionGrid'][0][1]['odds'];
     outcome = odds[1];
     first_team_name = outcome['participants'][0];
     second_team_name = outcome['participants'][1];
+    if outcome['header'] != 'Zápas':
+        print('Error: header is not "Zápas"');
+        return;
+    if moneyline['header'] != 'Víťaz zápasu':
+        print('Error: header is not "Víťaz zápasu"');
+        return;
     first_team_odds = outcome['selectionGrid'][0][0]['odds'];
     draw_odds = outcome['selectionGrid'][0][1]['odds'];
     second_team_odds = outcome['selectionGrid'][0][2]['odds'];
-    both_2_goals_line = [x for x in odds if x['headerDetail'] == 'Každý z tímov strelí aspoň 2 góly'][0];
-    both_2_goals_yes = both_2_goals_line['selectionGrid'][0][0]['odds'];
-    both_2_goals_no = both_2_goals_line['selectionGrid'][0][1]['odds'];
-    over_5_5_goals_line = [x for x in odds if x['headerDetail'] == 'Počet gólov do rozhodnutia'];
+    both_2_goals_line = [x for x in odds if x['headerDetail'] == 'Každý z tímov strelí aspoň 2 góly']
+    both_2_goals_yes, both_2_goals_no = 0, 0;
+    if len(both_2_goals_line) > 0:
+        both_2_goals_line = both_2_goals_line[0];
+        both_2_goals_yes = both_2_goals_line['selectionGrid'][0][0]['odds']
+        both_2_goals_no = both_2_goals_line['selectionGrid'][0][1]['odds']
+    over_5_5_goals_line = [x for x in odds if x['headerDetail'] == 'Počet gólov do rozhodnutia']
     over_5_5_goals_odds, under_5_5_goals_odds = 0, 0;
     for line in over_5_5_goals_line:
         selec_grid = line['selectionGrid'][0];
@@ -96,15 +112,31 @@ def format_odds(odds):
         if selec_grid[1]['name'] == 'viac ako 5.5':
             over_5_5_goals_odds = selec_grid[1]['odds'];
     
+    handicap_lines = [x for x in odds if x['headerDetail'] == 'Handicap']
+    handicaps = {}
+    for line in handicap_lines:
+        selec_grid = line['selectionGrid'][0];
+        if selec_grid[0]['name'] == f'{first_team_name} -1.5':
+            handicaps['H1-1.5'] = selec_grid[0]['odds'];
+        if selec_grid[1]['name'] == f'{second_team_name} +1.5':
+            handicaps['H2+1.5'] = selec_grid[1]['odds'];
+        if selec_grid[1]['name'] == f'{second_team_name} -1.5':
+            handicaps['H2-1.5'] = selec_grid[1]['odds'];
+    
     first_team_name = teams[first_team_name];
     second_team_name = teams[second_team_name];
     matchup_name = first_team_name + '/' + second_team_name;
+    print(f'Found matchup: {matchup_name}');
     return {
+        'Date': date,
         'Matchup': matchup_name,
         'Outcome': [second_team_odds, draw_odds, first_team_odds],
         'Moneyline': [moneyline_second_team, moneyline_first_team],
         'Both2Goals': [both_2_goals_no, both_2_goals_yes],
-        'OU5.5': [under_5_5_goals_odds, over_5_5_goals_odds]
+        'OU5.5': [under_5_5_goals_odds, over_5_5_goals_odds],
+        'H1-1.5': [1, handicaps['H1-1.5'] if 'H1-1.5' in handicaps else 0],
+        'H2+1.5': [1, handicaps['H2+1.5'] if 'H2+1.5' in handicaps else 0],
+        'H2-1.5': [1, handicaps['H2-1.5'] if 'H2-1.5' in handicaps else 0],
     }
 
 ids = get_game_ids()
@@ -112,9 +144,11 @@ matches = []
 for id in ids:
     odds = get_game_odds(id);
     odds = format_odds(odds);
-    matches.append(odds);
+    if odds is not None:
+        matches.append(odds);
 
 #write to json
+print(f'Found {len(matches)} matches.')
 with open('./data/odds/nike_odds.json', 'w') as outfile:
     json.dump(matches, outfile)
 print('Updated odds.')

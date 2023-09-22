@@ -2,16 +2,14 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
-team_stats = pd.read_csv('./data/teams/22_23-Teams.csv')
+team_stats = pd.read_csv('./data/teams/Combined_Teams.csv')
 games = pd.read_csv('./data/games/Combined_Games.csv')
 exits = pd.read_csv('./data/teams/exits.csv')
 exits_denial = pd.read_csv('./data/teams/exits_denial.csv')
-team_shots = pd.read_csv('./data/teams/shots.csv')
 league_shots = pd.read_csv('./data/teams/shots_league.csv')
 entries_denial = pd.read_csv('./data/teams/entries_denial.csv')
 entries = pd.read_csv('./data/teams/entries.csv')
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
@@ -101,7 +99,6 @@ def get_last_5_team(team_name, date):
 
 
 
-team_stats.drop(['Team name', 'Season'], axis=1, inplace=True)
 # add team stats to games dataframe
 # Team = _home
 # Opp. = _away
