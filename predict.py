@@ -102,6 +102,7 @@ def populate_matchup_data(matchup, team1, team2):
     exits_diff = team_home_exits - team_away_exits
     matchup['exits_diff'] = exits_diff
 
+
     team_home_entries = entries[entries['Team'] == team1]
     team_home_entries = team_home_entries['ControlledEntries %'].mean()
     team_away_entries = entries[entries['Team'] == team2]
