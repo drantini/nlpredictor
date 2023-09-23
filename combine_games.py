@@ -1,25 +1,28 @@
 import pandas as pd
 import re
-
+import os 
 team_stats = pd.read_csv('./data/teams/Combined_Teams.csv')
 
 #get games played
 combined_game_logs = pd.DataFrame()
+
+
 game_logs_dir = './data/games/'
 #combine all game logs into one dataframe and save to csv
 unique_match_id_column = 'MatchID'
 for team in team_stats['Team']:
-    team_game_logs = pd.read_csv(game_logs_dir + team + '_22_23.csv')
+    team_game_logs = pd.read_csv(game_logs_dir + team + '.csv')
     # remove games with away in 'Venue' column	
     team_game_logs = team_game_logs[team_game_logs['Venue'] != 'away']
     # only regular season games 
     team_game_logs = team_game_logs[team_game_logs['Phase'] == 'Regular Season']
     # drop venue column
     team_game_logs = team_game_logs.drop(columns=['Venue'])
+
     team_game_logs[unique_match_id_column] = team_game_logs['Date'].apply(lambda x: re.search(r'(\d{14})', x).group(1) if re.search(r'(\d{14})', x) else '')
 
     team_game_logs['Date'] = team_game_logs['Date'].apply(lambda x: re.search(r'>([^<]+)<', x).group(1) if pd.notnull(x) else x)
-    # possible lines
+    
     team_game_logs['Outcome'] = team_game_logs['PTS'].apply(lambda x: 1 if x == 3 else -1 if x == 0 else 0)
     team_game_logs['Moneyline'] = team_game_logs['PTS'].apply(lambda x: 1 if x == 3 or x == 2 else 0)
     # handicap bets
@@ -48,3 +51,49 @@ for team in team_stats['Team']:
 combined_game_logs = combined_game_logs.sort_values(by=['Date'])
 combined_game_logs = combined_game_logs.drop_duplicates(subset=unique_match_id_column)
 combined_game_logs.to_csv('./data/games/Combined_Games.csv', index=False)
+seasons_ref = {
+    "18": ["", "18_19"],
+    "19": ["18_19", "19_20"],
+    "20": ["19_20", "20_21"],
+    "21": ["20_21", "21_22"],
+    "22": ["21_22", "22_23"],
+    "23": ["22_23", "22_23"],
+    "24": ["23_24", "24_25"],
+}
+# add team stats to games dataframe
+# Team = _home
+# Opp. = _away
+team_logs_dir = './data/teams/'
+games_with_stats = pd.read_csv('./data/games/Combined_Games_With_Stats.csv') if 'Combined_Games_With_Stats.csv' in os.listdir('./data/games') else pd.DataFrame()
+for index, row in combined_game_logs.iterrows():
+    # date format YYYY-MM-DD\
+    date = row['Date']
+    year = date.split('-')[0][-2:]
+    month = date.split('-')[1]
+    season = seasons_ref[year][1] if month in ['09', '10', '11', '12'] else seasons_ref[year][0]
+    season_logs = pd.read_csv(team_logs_dir + season + '-Teams.csv')
+    shots_season_logs = pd.read_csv(team_logs_dir + season + '-shots.csv')
+    home_team_stats = season_logs[season_logs['Team'] == row['Team']]
+    home_shots_team_stats = shots_season_logs[shots_season_logs['Team'] == row['Team']]
+    away_team_stats = season_logs[season_logs['Team'] == row['Opp.']]
+    away_shots_team_stats = shots_season_logs[shots_season_logs['Team'] == row['Opp.']]
+    for col in home_team_stats.columns:
+        if col == 'Team' or col == 'Team name':
+            continue
+        combined_game_logs.at[index, col + '_home'] = home_team_stats[col].iloc[0]
+    for col in home_shots_team_stats.columns:
+        if col == 'Team':
+            continue
+        combined_game_logs.at[index, col + '_home'] = home_shots_team_stats[col].iloc[0]
+    for col in away_team_stats.columns:
+        if col == 'Team' or col == 'Team name':
+            continue
+        combined_game_logs.at[index, col + '_away'] = away_team_stats[col].iloc[0]
+    for col in away_shots_team_stats.columns:
+        if col == 'Team':
+            continue
+        combined_game_logs.at[index, col + '_away'] = away_shots_team_stats[col].iloc[0]
+    
+
+# write to csv
+combined_game_logs.to_csv('./data/games/Combined_Games_With_Stats.csv', index=False)

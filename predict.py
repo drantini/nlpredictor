@@ -4,7 +4,7 @@ import pickle
 import json
 model_dir = './data/models/'
 team_stats = pd.read_csv('./data/teams/Combined_Teams.csv')
-games = pd.read_csv('./data/games/Combined_Games_Stats.csv')
+games = pd.read_csv('./data/games/Combined_Games_With_Stats.csv')
 exits = pd.read_csv('./data/teams/exits.csv')
 exits_denial = pd.read_csv('./data/teams/exits_denial.csv')
 entries = pd.read_csv('./data/teams/entries.csv')
@@ -153,7 +153,6 @@ for match in odds:
     # add team stats to games dataframe
     matchup = pd.concat([team1_stats.add_suffix('_home'), team2_stats.add_suffix('_away')], axis=1)
     matchup = matchup.reset_index(drop=True)
-    # combine two rows into one
     matchup['Venue'] = 1
     matchup['Phase'] = 1
     # populate matchup data

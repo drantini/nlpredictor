@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
+import os 
 import json
-team_stats = pd.read_csv('./data/teams/Combined_Teams.csv')
-games = pd.read_csv('./data/games/Combined_Games.csv')
+games = pd.read_csv('./data/games/Combined_Games_With_Stats.csv')
 exits = pd.read_csv('./data/teams/exits.csv')
 hd_passes = pd.read_csv('./data/teams/hd_passes.csv')
 exits_denial = pd.read_csv('./data/teams/exits_denial.csv')
@@ -18,7 +18,7 @@ from sklearn.metrics import accuracy_score, classification_report
 
 features = config['default_features'] 
 
-target_var = 'Outcome'
+target_var = 'Moneyline'
 league_stats = pd.read_csv('./data/22_23_league.csv')
 # choose first row of league stats
 league_stats = league_stats.iloc[0]
@@ -101,14 +101,9 @@ def get_last_5_team(team_name, date):
 
 
 
-# add team stats to games dataframe
-# Team = _home
-# Opp. = _away
-games = pd.merge(games, team_stats, left_on='Team', right_on='Team', suffixes=('', '_home'))
-# merge again for opponent stats
-games = pd.merge(games, team_stats, left_on='Opp.', right_on='Team', suffixes=('', '_away'))
-# write to csv
-# sort by date
+# games = pd.merge(games, team_stats, left_on='Team', right_on='Team', suffixes=('', '_home'))
+# # merge again for opponent stats
+# games = pd.merge(games, team_stats, left_on='Opp.', right_on='Team', suffixes=('', '_away'))
 games = games.sort_values(by=['Date'])
 for index, row in games.iterrows():
     # get last 5 games where team was either Opp. or Team
@@ -125,8 +120,8 @@ for index, row in games.iterrows():
     #attack strength
     league_avg_goals = league_stats['GF']/league_stats['GP'];
     league_avg_goals_conceded = league_stats['GA']/league_stats['GP'];
-    avg_goals_home = row['GF_home']/row['GP'];
-    avg_goals_conceded_home = row['GA_home']/row['GP'];
+    avg_goals_home = row['GF_home']/row['GP_home'];
+    avg_goals_conceded_home = row['GA_home']/row['GP_home'];
     attack_strength_home = avg_goals_home/league_avg_goals;
     defence_strength_home = avg_goals_conceded_home/league_avg_goals_conceded;
     games.at[index, 'attack_strength_home'] = attack_strength_home
@@ -147,12 +142,12 @@ for index, row in games.iterrows():
     games.at[index, 'exp_goals_away'] = exp_away_goals
 
 
-    shots_per_match_diff = row['SF/60']-row['SF/60_away']
-    shots_against_per_match_diff = row['SA/60']-row['SA/60_away']
+    shots_per_match_diff = row['SF/60_home']-row['SF/60_away']
+    shots_against_per_match_diff = row['SA/60_home']-row['SA/60_away']
     games.at[index, 'shots_for_diff'] = shots_per_match_diff
     games.at[index, 'shots_against_diff'] = shots_against_per_match_diff
-    goals_per_match_diff = row['GF_/60']-row['GF_/60_away']
-    goals_against_per_match_diff = row['GA_/60']-row['GA_/60_away']
+    goals_per_match_diff = row['GF_/60_home']-row['GF_/60_away']
+    goals_against_per_match_diff = row['GA_/60_home']-row['GA_/60_away']
     pp_percentage_diff = row['PP%_home']-row['PP%_away']
     pk_percentage_diff = row['PK%_home']-row['PK%_away']
     games.at[index, 'pp_percentage_diff'] = pp_percentage_diff
@@ -160,12 +155,12 @@ for index, row in games.iterrows():
 
     games.at[index, 'goals_for_diff'] = goals_per_match_diff
     games.at[index, 'goals_against_diff'] = goals_against_per_match_diff
-    points_per_match_diff = row['PTS/GP']-row['PTS/GP_away'];
+    points_per_match_diff = row['PTS/GP_home']-row['PTS/GP_away'];
     games.at[index, 'pts_diff'] = points_per_match_diff
     
 
-    corsi_per_match_diff = row['CF/60']-row['CF/60_away']
-    corsi_against_per_match_diff = row['CA/60']-row['CA/60_away']
+    corsi_per_match_diff = row['CF/60_home']-row['CF/60_away']
+    corsi_against_per_match_diff = row['CA/60_home']-row['CA/60_away']
     games.at[index, 'corsi_for_diff'] = corsi_per_match_diff
     games.at[index, 'corsi_against_diff'] = corsi_against_per_match_diff
     
@@ -311,6 +306,7 @@ for index, row in games.iterrows():
     games.at[index, 'h2h_conceded_avg_home'] = conceded_avg_h2h
     
 
+games.to_csv('./data/games/test.csv', index=False)
    
 x = games[features]
 y = games[target_var]
