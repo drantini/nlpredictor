@@ -1,5 +1,8 @@
 {
     "bookmaker_margin": 6,
     "ceiling_odd": 5,
-    "min_ev": 2
+    "min_ev": 2,
+    "bankroll": 350,
+    "kelly_fraction": 0.25,
+    "default_features": ["pts_diff", "eq_goals_diff", "exits_denial_diff", "hdp_percent_diff", "entries_denial_diff", "exits_diff", "entries_diff", "exp_goals_home", "exp_goals_away", "attack_strength_diff", "defence_strength_diff", "shots_for_diff", "h2h_scored_avg_home", "h2h_conceded_avg_home", "corsi_for_diff", "corsi_against_diff", "goals_for_diff", "goals_against_diff", "pp_percentage_diff", "pk_percentage_diff", "shots_against_diff", "win_r5_home", "draw_r5_home", "lose_r5_home", "scored_avg_r5_home", "conceded_avg_r5_home", "win_r5_away", "draw_r5_away", "lose_r5_away", "scored_avg_r5_away", "conceded_avg_r5_away", "h2h_win_ratio_home", "h2h_draw_ratio_home", "h2h_lose_ratio_home"]
 }

@@ -9,6 +9,7 @@ exits = pd.read_csv('./data/teams/exits.csv')
 exits_denial = pd.read_csv('./data/teams/exits_denial.csv')
 entries = pd.read_csv('./data/teams/entries.csv')
 league_shots = pd.read_csv('./data/teams/shots_league.csv')
+hd_passes = pd.read_csv('./data/teams/hd_passes.csv')
 entries_denial = pd.read_csv('./data/teams/entries_denial.csv')
 league_stats = pd.read_csv('./data/22_23_league.csv')
 # choose first row of league stats
@@ -20,7 +21,7 @@ ceiling_odd = config['ceiling_odd']
 models = {}
 target_vars = []
 
-features = ['pts_diff', 'eq_goals_diff', 'exits_denial_diff', 'entries_denial_diff', 'exits_diff', 'entries_diff', 'exp_goals_home', 'exp_goals_away', 'attack_strength_diff', 'defence_strength_diff', 'shots_for_diff', 'h2h_scored_avg_home', 'h2h_conceded_avg_home', 'corsi_for_diff', 'corsi_against_diff', 'goals_for_diff', 'goals_against_diff', 'pp_percentage_diff', 'pk_percentage_diff', 'shots_against_diff', 'win_r5_home', 'draw_r5_home', 'lose_r5_home', 'scored_avg_r5_home', 'conceded_avg_r5_home', 'win_r5_away', 'draw_r5_away', 'lose_r5_away', 'scored_avg_r5_away', 'conceded_avg_r5_away', 'h2h_win_ratio_home', 'h2h_draw_ratio_home', 'h2h_lose_ratio_home']
+features = config['default_features'] 
 for model in os.listdir(model_dir): 
     if model.endswith('.sav'):
         type = model.split('_')[0]
@@ -121,6 +122,13 @@ def populate_matchup_data(matchup, team1, team2):
     entries_denial_diff = team_home_entries_denial - team_away_entries_denial
     matchup['entries_denial_diff'] = entries_denial_diff
 
+
+    hdp_passes_home = hd_passes[hd_passes['Team'] == team1]
+    hdp_passes_away = hd_passes[hd_passes['Team'] == team2]
+    team_home_hdp_percent = hdp_passes_home['SuccessfulHDP %'].mean()
+    team_away_hdp_percent = hdp_passes_away['SuccessfulHDP %'].mean()
+    hdp_percent_diff = team_home_hdp_percent - team_away_hdp_percent
+    matchup['hdp_percent_diff'] = hdp_percent_diff 
     
 
 
@@ -270,7 +278,7 @@ for match in odds:
         idx=0
 
         bookmaker_line = match.get(target_var)
-        # print(target_var)
+        print(target_var)
         for prob in line:
             adjusted_prob = prob*100+(bookmaker_margin/len(line))
             adjusted_prob = adjusted_prob/100
@@ -306,7 +314,13 @@ for match in odds:
 
             # 30% is max EV,reason: possible error in model
             if ev>config['min_ev'] and bookmaker_odd<ceiling_odd and bookmaker_odd > 1:
+                bankroll = config['bankroll']
+                kelly_fraction = config['kelly_fraction']
+                kelly_bet = (prob*bookmaker_odd-1)/(bookmaker_odd-1)
+                kelly_bet = round(kelly_bet, 2)
+                kelly_bet = kelly_bet*kelly_fraction
                 print(f'Detected value bet: {ev}% - {target_var} {outcome_str} - Bookmaker: {bookmaker_odd}(Correct: {round(1/adjusted_prob, 2)}) - Prob: {round(prob*100, 2)}%') 
+                print(f'Recommended bet: {round(kelly_bet*bankroll, 2)}€')
             
             odds_accuracy += (1-abs(1/adjusted_prob-bookmaker_odd)/bookmaker_odd)*100
             odds_amount += 1

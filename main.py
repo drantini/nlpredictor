@@ -2,22 +2,23 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
+import json
 team_stats = pd.read_csv('./data/teams/Combined_Teams.csv')
 games = pd.read_csv('./data/games/Combined_Games.csv')
 exits = pd.read_csv('./data/teams/exits.csv')
+hd_passes = pd.read_csv('./data/teams/hd_passes.csv')
 exits_denial = pd.read_csv('./data/teams/exits_denial.csv')
-league_shots = pd.read_csv('./data/teams/shots_league.csv')
 entries_denial = pd.read_csv('./data/teams/entries_denial.csv')
 entries = pd.read_csv('./data/teams/entries.csv')
+config = json.load(open('./config.json'))
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
 
-# TODO: Learn how to use HD passes and HD passes against to improve model
-features = ['pts_diff', 'eq_goals_diff', 'exits_denial_diff', 'entries_denial_diff', 'exits_diff', 'entries_diff', 'exp_goals_home', 'exp_goals_away', 'attack_strength_diff', 'defence_strength_diff', 'shots_for_diff', 'h2h_scored_avg_home', 'h2h_conceded_avg_home', 'corsi_for_diff', 'corsi_against_diff', 'goals_for_diff', 'goals_against_diff', 'pp_percentage_diff', 'pk_percentage_diff', 'shots_against_diff', 'win_r5_home', 'draw_r5_home', 'lose_r5_home', 'scored_avg_r5_home', 'conceded_avg_r5_home', 'win_r5_away', 'draw_r5_away', 'lose_r5_away', 'scored_avg_r5_away', 'conceded_avg_r5_away', 'h2h_win_ratio_home', 'h2h_draw_ratio_home', 'h2h_lose_ratio_home']
+features = config['default_features'] 
 
-target_var = 'Moneyline'
+target_var = 'Outcome'
 league_stats = pd.read_csv('./data/22_23_league.csv')
 # choose first row of league stats
 league_stats = league_stats.iloc[0]
@@ -30,6 +31,7 @@ def get_dist(feature):
 def get_samples(dist):
     samples = np.random.choice(dist, 10000)
     return samples
+
 
 def monte_carlo_sim(model, its=5000):
     samples = []
@@ -199,6 +201,15 @@ for index, row in games.iterrows():
     team_away_entries_denial = team_away_entries_denial['ControlledEntries %against'].mean()
     entries_denial_diff = team_home_entries_denial - team_away_entries_denial
     games.at[index, 'entries_denial_diff'] = entries_denial_diff 
+
+    hdp_passes_home = hd_passes[hd_passes['Team'] == row['Team']]
+    hdp_passes_away = hd_passes[hd_passes['Team'] == row['Opp.']]
+    team_home_hdp_percent = hdp_passes_home['SuccessfulHDP %'].mean()
+    team_away_hdp_percent = hdp_passes_away['SuccessfulHDP %'].mean()
+    hdp_percent_diff = team_home_hdp_percent - team_away_hdp_percent
+    games.at[index, 'hdp_percent_diff'] = hdp_percent_diff 
+
+
 
 
 

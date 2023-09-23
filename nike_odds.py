@@ -81,19 +81,13 @@ teams = {
 }
 def format_odds(odds):
     # get match outcome: betHeaderDetail = 'Zapas'
-    moneyline = odds[0];
+    moneyline = [x for x in odds if x['headerDetail'] == 'Víťaz zápasu'][0];
     date = moneyline['expirationTime'].split('T')[0];
     moneyline_first_team = moneyline['selectionGrid'][0][0]['odds'];
     moneyline_second_team = moneyline['selectionGrid'][0][1]['odds'];
-    outcome = odds[1];
+    outcome = [x for x in odds if x['headerDetail'] == 'Zápas'][0]; 
     first_team_name = outcome['participants'][0];
     second_team_name = outcome['participants'][1];
-    if outcome['header'] != 'Zápas':
-        print('Error: header is not "Zápas"');
-        return;
-    if moneyline['header'] != 'Víťaz zápasu':
-        print('Error: header is not "Víťaz zápasu"');
-        return;
     first_team_odds = outcome['selectionGrid'][0][0]['odds'];
     draw_odds = outcome['selectionGrid'][0][1]['odds'];
     second_team_odds = outcome['selectionGrid'][0][2]['odds'];
