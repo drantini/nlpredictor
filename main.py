@@ -18,7 +18,7 @@ from sklearn.metrics import accuracy_score, classification_report
 
 features = config['default_features'] 
 
-target_var = 'Outcome'
+target_var = 'Moneyline'
 league_stats = pd.read_csv('./data/22_23_league.csv')
 # choose first row of league stats
 league_stats = league_stats.iloc[0]

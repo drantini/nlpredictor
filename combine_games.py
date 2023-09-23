@@ -9,7 +9,7 @@ game_logs_dir = './data/games/'
 #combine all game logs into one dataframe and save to csv
 unique_match_id_column = 'MatchID'
 for team in team_stats['Team']:
-    team_game_logs = pd.read_csv(game_logs_dir + team + '_22_23.csv')
+    team_game_logs = pd.read_csv(game_logs_dir + team + '.csv')
     # remove games with away in 'Venue' column	
     team_game_logs = team_game_logs[team_game_logs['Venue'] != 'away']
     # only regular season games 
