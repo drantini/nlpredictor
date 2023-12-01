@@ -1,42 +1,29 @@
 import requests
 import json
-cookies = {
-    'Trace-Id': '11526b41-304e-4713-ba4f-840de4c4d114',
-    'Nike.UUID': 'dfaafbe1-9e04-4f75-b2eb-c2675d270b5c',
-    'Nike.bitfa': '34ce5c1f-bb15-4423-932f-67cf72b77132',
-    '_gcl_au': '1.1.326794301.1692441962',
-    '_fbp': 'fb.1.1692441963125.1736939095',
-    '_gid': 'GA1.2.824419695.1694555686',
-    'csrfToken': 'q1SXYI2r9%2BKaMY0BKP3elDViZDc5MTFkNDQ5Y2RhMGY1MjRmY2QzYjdiMjk0ZWVkNWM4ZDllYWE%3D',
-    'Nike.bttfa': 'drantini:61e87d84-46da-447b-9967-2d51012dd5ae',
-    'Contract-Id': '14171707',
-    'TS016649c9': '010743573edcbad31c6f53d3f8814c33dff22168356a8055a8f1de53cd1baecf990c409e24fb77af075c0be27ae1f929c6dff11d7d2d97b60ba4061ed188cb4534766db33074ec71002ccd7c02a47aac02efb7bfaa2ed91b0071273cef8d8cd753e903334c4f61438c07ceae3e1ebd87781d628962',
-    '_sp_srt_id.2d0c': '902edbc0-44cf-4ab2-93e1-87794be453bd.1692441964.27.1694689903.1694687659.4ca525ec-f632-47a9-8e52-3d73104c478b.a6f02247-3346-45fb-9c8b-23294ea44c96...0',
-    '_ga': 'GA1.2.895249329.1692441955',
-    '_ga_DE6QBHRM6X': 'GS1.1.1694689900.30.1.1694691686.58.0.0',
-    'TS337d42a9029': '0807006ba9ab2800664311e7cb17bd95de1c72c119289beafc579c0d86cdeec6b6675d358678a732ed56fe6f7c750bea',
-    'TSfabc11ac027': '0807006ba9ab2000ebfc6e47cb49bf1a76a12bc3ac758df1cdde6b132289ecda3d8a4e3cd743805b080d4dd5fb113000f118edcb7202e5cd0573be732c929f4ff5b8e6698be4ee50a9c378729c24ae24fdd9c26aa72274c6667972d9037ad338',
-}
+cookies = "Nike.LOCALE=sk; Trace-Id=9c888f25-5762-4704-b581-7a90858a061f; Nike.UUID=ff30d60c-8ca6-47ad-9cc6-1c67094ceaab; Nike.bitfa=745df340-119f-4aab-b400-d70a8dfdc50b; SESSION=YTBjYzVkMDAtNWZiYi00ZmFkLWEwMTEtZWZjYjg5Y2QwMTFi; TS016649c9=010743573e4edfc379d081d3340a1405c1ea40937a42099bf7af6045f6af0263ca72a9ded71d2bcf76909b0a7669d14d055e402bc3f28215cce5712a90dc2cd8530c7d91eb387d25d747648a37fed78f56ce57a2779f47c8801d4b0165674d77f9d2a16fba; Nike.SESSION_ID_TE=12828fe9-353f-1d45-7de7-17f0b9a2bf33; BetslipSessionId=NjA3YzZhMzctNDU3Zi00N2U0LThjMDMtMzc2ZmJmZWQ0ODI2; JSESSIONID=node0yfbkxcdd8pmjikssge4ikus91371350.node0; TS01750538=010743573ea70932475bbf9c609022583c8bf1e21436c9479607fbc9672e88a9bcd375ea3d8853d99c574d45e79e5fa3b2074194c0a7e92191a235b430c4327ff4ac11492898686a79ccf4067610196b1470f9ca6b9bee1f6f49ddc824ffebab10c80c518a"
+# parse cookies
+cookies = {c.split('=')[0]: c.split('=')[1] for c in cookies.split('; ')}
 headers = {
     'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'en-GB,en;q=0.9,en-US;q=0.8',
+    'Accept-Language': 'en-GB,en;q=0.6',
+    'Accept-Encoding': 'gzip, deflate, br',
     'Connection': 'keep-alive',
     'Content-Language': 'sk',
-    # 'Cookie': 'Trace-Id=11526b41-304e-4713-ba4f-840de4c4d114; Nike.UUID=dfaafbe1-9e04-4f75-b2eb-c2675d270b5c; Nike.bitfa=34ce5c1f-bb15-4423-932f-67cf72b77132; _gcl_au=1.1.326794301.1692441962; _fbp=fb.1.1692441963125.1736939095; _gid=GA1.2.824419695.1694555686; csrfToken=q1SXYI2r9%2BKaMY0BKP3elDViZDc5MTFkNDQ5Y2RhMGY1MjRmY2QzYjdiMjk0ZWVkNWM4ZDllYWE%3D; Nike.bttfa=drantini:61e87d84-46da-447b-9967-2d51012dd5ae; Contract-Id=14171707; TS016649c9=010743573edcbad31c6f53d3f8814c33dff22168356a8055a8f1de53cd1baecf990c409e24fb77af075c0be27ae1f929c6dff11d7d2d97b60ba4061ed188cb4534766db33074ec71002ccd7c02a47aac02efb7bfaa2ed91b0071273cef8d8cd753e903334c4f61438c07ceae3e1ebd87781d628962; _sp_srt_id.2d0c=902edbc0-44cf-4ab2-93e1-87794be453bd.1692441964.27.1694689903.1694687659.4ca525ec-f632-47a9-8e52-3d73104c478b.a6f02247-3346-45fb-9c8b-23294ea44c96...0; _ga=GA1.2.895249329.1692441955; _ga_DE6QBHRM6X=GS1.1.1694689900.30.1.1694691686.58.0.0; TS337d42a9029=0807006ba9ab2800664311e7cb17bd95de1c72c119289beafc579c0d86cdeec6b6675d358678a732ed56fe6f7c750bea; TSfabc11ac027=0807006ba9ab2000ebfc6e47cb49bf1a76a12bc3ac758df1cdde6b132289ecda3d8a4e3cd743805b080d4dd5fb113000f118edcb7202e5cd0573be732c929f4ff5b8e6698be4ee50a9c378729c24ae24fdd9c26aa72274c6667972d9037ad338',
     'Origin': 'https://www.nike.sk',
     'Referer': 'https://www.nike.sk/',
     'Sec-Fetch-Dest': 'empty',
     'Sec-Fetch-Mode': 'cors',
     'Sec-Fetch-Site': 'same-site',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.81',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/116.0.1938.81',
     'sec-ch-ua': '"Chromium";v="116", "Not)A;Brand";v="24", "Microsoft Edge";v="116"',
     'sec-ch-ua-mobile': '?0',
     'sec-ch-ua-platform': '"Windows"',
+    'Sec-Gpc': '1'
 }
 def get_game_ids():
 
     response = requests.get(
-    'https://api.nike.sk/api/nikeone/v1/boxes/search/portal?betNumbers&date&live=true&menu=%2Fhokej%2Fsvajciarsko%2Fsvajciarsko&minutes&order&prematch=true&results=false',
+    'https://nike.sk/api-gw/nikeone/v1/boxes/search/portal?betNumbers&date&live=true&menu=%2Fhokej%2Fsvajciarsko%2Fsvajciarsko&minutes&order&prematch=true&results=false',
     cookies=cookies,
     headers=headers,
     )
@@ -53,7 +40,7 @@ def get_game_ids():
 
 def get_game_odds(id):
     response = requests.get(
-    'https://api.nike.sk/api/nikeone/v1/boxes/extended/sport-event-id',
+    'https://nike.sk/api-gw/nikeone/v1/boxes/extended/sport-event-id',
     params={
         'boxId': 'bi-3-22-6',
         'sportEventId': id,
